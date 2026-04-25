@@ -1,0 +1,227 @@
+/* src/index.css */
+
+/* ─── Базовые стили ─────────────────────────────────────────────────── */
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Тёмная тема ───────────────────────────────────────────────────── */
+[data-mantine-color-scheme="dark"] {
+  color-scheme: dark;
+  background-color: #1a1b1e;
+
+  /* Семантические токены — тёмная тема */
+  --app-bg:              #1a1b1e;
+  --surface-0:           #141517;  /* самый тёмный */
+  --surface-1:           #1a1b1e;  /* основной фон */
+  --surface-2:           #25262b;  /* карточки, Paper */
+  --surface-3:           #2c2e33;  /* шапки таблиц, hover */
+  --surface-4:           #373a40;  /* активные строки, разделители */
+
+  --border-color:        rgba(255,255,255,0.08);
+  --border-color-strong: rgba(255,255,255,0.14);
+
+  --text-primary:   #C1C2C5;
+  --text-secondary: #909296;
+  --text-dimmed:    #5c5f66;
+  --text-bright:    #fff;
+
+  --header-bg:           #1a1b1e;
+  --header-border:       rgba(255,255,255,0.08);
+
+  --table-header-bg:     #25262b;
+  --table-stripe-bg:     rgba(255,255,255,0.02);
+  --table-hover-bg:      rgba(255,255,255,0.04);
+
+  --winner-red-bg:       #7b1e1e;
+  --winner-black-bg:     #1a1a1a;
+  --winner-neutral-bg:   #25262b;
+
+  --slot-fk-bg:          rgba(34,139,230,0.15);
+  --sidebar-bg:          #141517;
+  --overlay-bg:          rgba(0,0,0,0.7);
+}
+
+/* ─── Светлая тема ──────────────────────────────────────────────────── */
+[data-mantine-color-scheme="light"] {
+  color-scheme: light;
+  background-color: #f0f2f5;
+
+  /* Семантические токены — светлая тема */
+  --app-bg:              #f0f2f5;
+  --surface-0:           #e8eaed;
+  --surface-1:           #f0f2f5;
+  --surface-2:           #ffffff;
+  --surface-3:           #f4f5f7;
+  --surface-4:           #ebedf0;
+
+  --border-color:        rgba(0,0,0,0.09);
+  --border-color-strong: rgba(0,0,0,0.15);
+
+  --text-primary:   #1c1e26;
+  --text-secondary: #4a5568;
+  --text-dimmed:    #718096;
+  --text-bright:    #0d0f14;
+
+  --header-bg:           #ffffff;
+  --header-border:       rgba(0,0,0,0.09);
+
+  --table-header-bg:     #f4f5f7;
+  --table-stripe-bg:     rgba(0,0,0,0.02);
+  --table-hover-bg:      rgba(0,0,0,0.04);
+
+  --winner-red-bg:       #fce8e8;
+  --winner-black-bg:     #e9e9e9;
+  --winner-neutral-bg:   #f4f5f7;
+
+  --slot-fk-bg:          rgba(34,139,230,0.10);
+  --sidebar-bg:          #ffffff;
+  --overlay-bg:          rgba(0,0,0,0.5);
+}
+
+/* ─── Светлая тема: компоненты Mantine ─────────────────────────────── */
+
+[data-mantine-color-scheme="light"] .mantine-AppShell-header {
+  background-color: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+[data-mantine-color-scheme="light"] .mantine-AppShell-main {
+  background-color: var(--app-bg);
+}
+
+[data-mantine-color-scheme="light"] .mantine-Paper-root {
+  background-color: var(--surface-2);
+  border-color: var(--border-color) !important;
+}
+
+/* Table */
+[data-mantine-color-scheme="light"] .mantine-Table-table {
+  background-color: var(--surface-2);
+}
+[data-mantine-color-scheme="light"] .mantine-Table-thead {
+  background-color: var(--surface-3) !important;
+}
+[data-mantine-color-scheme="light"] .mantine-Table-tr:hover td {
+  background-color: var(--table-hover-bg) !important;
+}
+
+/* Input */
+[data-mantine-color-scheme="light"] .mantine-Input-input {
+  background-color: var(--surface-2);
+  border-color: var(--border-color-strong);
+  color: var(--text-primary);
+}
+[data-mantine-color-scheme="light"] .mantine-Input-input:focus {
+  border-color: #fa5252;
+}
+
+/* Select dropdown */
+[data-mantine-color-scheme="light"] .mantine-Select-dropdown,
+[data-mantine-color-scheme="light"] .mantine-MultiSelect-dropdown,
+[data-mantine-color-scheme="light"] .mantine-Combobox-dropdown {
+  background-color: var(--surface-2);
+  border-color: var(--border-color-strong);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+[data-mantine-color-scheme="light"] .mantine-Combobox-option:hover,
+[data-mantine-color-scheme="light"] .mantine-Select-option:hover {
+  background-color: var(--surface-3) !important;
+}
+[data-mantine-color-scheme="light"] .mantine-Combobox-option[data-combobox-selected] {
+  background-color: var(--surface-4) !important;
+}
+
+/* Drawer */
+[data-mantine-color-scheme="light"] .mantine-Drawer-content {
+  background-color: var(--surface-2);
+}
+[data-mantine-color-scheme="light"] .mantine-Drawer-header {
+  background-color: var(--surface-2);
+}
+
+/* Menu */
+[data-mantine-color-scheme="light"] .mantine-Menu-dropdown {
+  background-color: var(--surface-2);
+  border-color: var(--border-color-strong);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+[data-mantine-color-scheme="light"] .mantine-Menu-item:hover {
+  background-color: var(--surface-3);
+}
+
+/* Tabs */
+[data-mantine-color-scheme="light"] .mantine-Tabs-tab {
+  color: var(--text-secondary);
+}
+[data-mantine-color-scheme="light"] .mantine-Tabs-tab[data-active] {
+  color: #e03131;
+  border-color: #e03131;
+}
+
+/* Modal */
+[data-mantine-color-scheme="light"] .mantine-Modal-content {
+  background-color: var(--surface-2);
+  border-color: var(--border-color);
+}
+[data-mantine-color-scheme="light"] .mantine-Modal-header {
+  background-color: var(--surface-2);
+}
+
+/* Badge light variant */
+[data-mantine-color-scheme="light"] .mantine-Badge-root[data-variant="light"] {
+  background-color: rgba(0,0,0,0.06);
+}
+
+/* SegmentedControl */
+[data-mantine-color-scheme="light"] .mantine-SegmentedControl-root {
+  background-color: var(--surface-4);
+}
+
+/* Notification */
+[data-mantine-color-scheme="light"] .mantine-Notification-root {
+  background-color: var(--surface-2);
+  border-color: var(--border-color);
+}
+
+/* DatePicker dropdown */
+[data-mantine-color-scheme="light"] .mantine-DatePickerInput-dropdown,
+[data-mantine-color-scheme="light"] .mantine-Popover-dropdown {
+  background-color: var(--surface-2);
+  border-color: var(--border-color-strong);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+/* ─── Плавный переход ───────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.1s ease;
+}
+
+.mantine-Switch-thumb,
+.mantine-Switch-track,
+svg,
+img {
+  transition: none;
+}
+
+/* ─── Общие стили ───────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: Verdana, sans-serif;
+}
+
+a {
+  font-weight: 500;
+  text-decoration: inherit;
+}
