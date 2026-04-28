@@ -10,8 +10,11 @@ services:
       POSTGRES_DB: mafia_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     restart: unless-stopped
     # Порт наружу НЕ открываем
+    
 
   backend:
     build:
@@ -21,14 +24,24 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mafia_db
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
     volumes:
       - maven_cache:/root/.m2
     restart: unless-stopped
     depends_on:
       - db
-    # Запускаем скомпилированный jar вместо mvnw в production
-    command: java -jar target/backend-0.0.1-SNAPSHOT.jar
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mafia_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${WEB_PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${WEB_PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"                             
+    restart: unless-stopped
+    depends_on:
+      - db
 
   minio:
     image: minio/minio:latest
