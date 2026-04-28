@@ -159,7 +159,19 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                     }
                 </Table.Td>
 
-                <Table.Td w={60} style={{ minWidth: 60, textAlign: 'center' }}>
+                <Table.Td
+                    w={60}
+                    style={{
+                        minWidth: 60, textAlign: 'center',
+                        backgroundColor: !areResultsHidden && isCompleted
+                            ? slot.extraNeg > 0
+                                ? 'rgba(255, 80, 80, 0.18)'
+                                : slot.extraPos > 0
+                                    ? 'rgba(130, 230, 50, 0.18)'
+                                    : undefined
+                            : undefined,
+                    }}
+                >
                     {!areResultsHidden && isCompleted ? (
                         <Tooltip
                             label={<SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff} />}

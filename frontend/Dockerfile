@@ -1,15 +1,13 @@
-# Используем Node для сборки и разработки
-FROM node:22-alpine
-
+# frontend/Dockerfile — PRODUCTION версия
+FROM node:22-alpine AS builder
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install
-
 COPY . .
+RUN npm run build
 
-# Vite по умолчанию работает на 5173
-EXPOSE 5173
-
-# Запускаем в режиме разработки с хостом 0.0.0.0 для доступа извне контейнера
-CMD ["npm", "run", "dev", "--", "--host"]
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx-frontend.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

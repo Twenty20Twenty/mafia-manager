@@ -1,6 +1,4 @@
 services:
-
-  # ─── Database ────────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
     container_name: mafia_db
@@ -12,10 +10,9 @@ services:
       POSTGRES_DB: mafia_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
+    # Порт наружу НЕ открываем
 
-  # ─── Backend (Java Spring Boot) ──────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -26,21 +23,13 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mafia_db
     volumes:
-      - ./backend:/app
-      - /app/.mvn
-      - /app/target
       - maven_cache:/root/.m2
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
     depends_on:
       - db
-      - mailpit
-    command: ./mvnw spring-boot:run
+    # Запускаем скомпилированный jar вместо mvnw в production
+    command: java -jar target/backend-0.0.1-SNAPSHOT.jar
 
-  # ─── MinIO (Object Storage) ──────────────────────────────────────────────────
-  # S3-совместимое хранилище для аватаров и других файлов.
-  # Web UI:  http://localhost:9001  (логин/пароль из .env)
-  # S3 API:  http://localhost:9000
   minio:
     image: minio/minio:latest
     container_name: mafia_minio
@@ -53,15 +42,15 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web Console
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
 
-  # ─── MinIO Init (создаёт bucket при первом запуске) ──────────────────────────
   minio-init:
     image: minio/mc:latest
     container_name: mafia_minio_init
@@ -79,42 +68,34 @@ services:
       "
     restart: on-failure
 
-  # ─── pgAdmin ─────────────────────────────────────────────────────────────────
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: mafia_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
+  # Фронтенд теперь — статика через nginx, НЕ dev server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mafia_frontend
+    restart: unless-stopped
+    # Порт наружу НЕ открываем — только через основной nginx
 
-  # ─── Mailpit (dev SMTP + веб-UI для писем) ───────────────────────────────────
-  # Все письма перехватываются здесь. В прод не едет.
-  # Веб-интерфейс: http://localhost:8025
-  # SMTP для Spring Mail: host=mailpit, port=1025
+  nginx:
+    image: nginx:alpine
+    container_name: mafia_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
   mailpit:
     image: axllent/mailpit
     container_name: mafia_mailpit
     ports:
-      - "8025:8025"   # веб-UI
-      - "1025:1025"   # SMTP
-
-  # ─── Frontend ────────────────────────────────────────────────────────────────
-  frontend:
-    build: ./frontend
-    container_name: mafia_frontend
-    env_file:
-      - ./frontend/.env
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
