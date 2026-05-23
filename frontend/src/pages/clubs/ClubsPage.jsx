@@ -100,7 +100,12 @@ export default function ClubsPage() {
                         >
                             <Group justify="space-between" wrap="nowrap">
                                 <Group wrap="nowrap" style={{ minWidth: 0 }}>
-                                    <Avatar src={club.logoUrl} size="md" radius="md" bg="white" p={2} style={{ flexShrink: 0 }} />
+                                    <Avatar src={club.logoUrl}
+                                            w={50}
+                                            h={50}
+                                            radius="25%"
+                                            p={2}
+                                            style={{ flexShrink: 0 }} />
                                     <div style={{ minWidth: 0 }}>
                                         <Text size="md" fw={700} truncate>{club.name}</Text>
                                         <Group gap={5} c="dimmed" mt={0}>

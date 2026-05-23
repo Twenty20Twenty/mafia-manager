@@ -1,8 +1,8 @@
 // src/pages/tournaments/components/profile/TournamentHeader.jsx
-import { Paper, Group, Badge, Title, Text, Avatar, Button, Stack } from '@mantine/core';
+import {Paper, Group, Badge, Title, Text, Avatar, Button, Stack, Grid} from '@mantine/core';
 import {
     IconCalendar, IconUsers, IconChartBar, IconBrandVk,
-    IconSettings, IconMapPin
+    IconSettings, IconMapPin, IconCrown
 } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { TOURNAMENT_TYPES, TOURNAMENT_STATUSES } from '../../constants/tournamentConstants';
@@ -25,14 +25,29 @@ export default function TournamentHeader({
     const dateLabel = formatTournamentDates(tournament.startDate, tournament.endDate);
 
     return (
-        <Paper withBorder radius="md" p={{ base: 'md', sm: 'xl' }} mb="xl"
-            style={{ backgroundColor: c.surface2 }}>
-            <Group justify="space-between" align="flex-start">
-                <div style={{ flex: 1, minWidth: 0 }}>
+        <Paper
+            withBorder
+            radius="md"
+            p={{ base: 'md', sm: 'xl' }}
+            mb="xl"
+            style={{ backgroundColor: c.surface2 }}
+        >
+            <Grid gutter="xl" align="flex-start">
+
+                {/* LEFT SIDE */}
+                <Grid.Col span={{ base: 12, md: 8 }}>
+
                     <Group mb="xs" wrap="wrap">
-                        <Badge color={typeInfo.color} size="lg">{typeInfo.label}</Badge>
+                        <Badge color={typeInfo.color} size="lg">
+                            {typeInfo.label}
+                        </Badge>
+
                         {statusInfo && (
-                            <Badge color={statusInfo.color} variant="outline" size="lg">
+                            <Badge
+                                color={statusInfo.color}
+                                variant="outline"
+                                size="lg"
+                            >
                                 {statusInfo.label}
                             </Badge>
                         )}
@@ -47,96 +62,109 @@ export default function TournamentHeader({
                         </Group>
                     )}
 
-                    <Text c="dimmed" mt="sm" size="md" style={{ maxWidth: 800 }}>
+                    <Text
+                        c="dimmed"
+                        mt="sm"
+                        size="md"
+                        style={{ maxWidth: 800 }}
+                    >
                         {tournament.description || 'Описание отсутствует'}
                     </Text>
 
-                    <Group mt="md" gap={{ base: 'sm', sm: 'xl' }} wrap="wrap">
+                    {/* MINI BLOCKS */}
+                    <Group mt="xl" grow align="stretch">
+
+                        {/* DATE */}
                         {(tournament.startDate || tournament.endDate) && (
-                            <Group gap={5}>
-                                <IconCalendar size={20} style={{ opacity: 0.7 }} />
-                                <Text size="sm">{dateLabel}</Text>
-                            </Group>
+                            <Paper
+                                withBorder
+                                radius="md"
+                                p="md"
+                                style={{ backgroundColor: c.surface3 }}
+                            >
+                                <Group mb={6}>
+                                    <IconCalendar size={18} />
+                                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                                        Дата проведения
+                                    </Text>
+                                </Group>
+
+                                <Text fw={600}>
+                                    {dateLabel}
+                                </Text>
+                            </Paper>
                         )}
 
-                        <Group gap={5}>
-                            {isRating ? (
-                                <>
-                                    <IconChartBar size={20} style={{ opacity: 0.7 }} />
-                                    <Text size="sm">
-                                        Участников:{' '}
-                                        <span style={{ fontWeight: 700, color: 'var(--mantine-color-teal-4)' }}>
-                                            {participantsCount}
-                                        </span>
-                                    </Text>
-                                </>
-                            ) : (
-                                <>
-                                    <IconUsers size={20} style={{ opacity: 0.7 }} />
-                                    <Text size="sm">
-                                        Участников:{' '}
-                                        <span style={{ fontWeight: 700, color: 'var(--mantine-color-blue-4)' }}>
-                                            {participantsCount}
-                                        </span>{' '}
-                                        / {maxParticipants}
-                                    </Text>
-                                </>
-                            )}
-                        </Group>
+                        {/* PARTICIPANTS */}
+                        <Paper
+                            withBorder
+                            radius="md"
+                            p="md"
+                            style={{ backgroundColor: c.surface3 }}
+                        >
+                            <Group mb={6}>
+                                {isRating ? (
+                                    <IconChartBar size={18} />
+                                ) : (
+                                    <IconUsers size={18} />
+                                )}
 
-                        {tournament.clubName && (
-                            <Group gap={5} component={Link} to={`/clubs/${tournament.clubId}`}
-                                   style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <Text c="dimmed" size="sm">Клуб:</Text>
-                                <Text fw={500} size="sm"
-                                      style={{ borderBottom: `1px dashed ${c.border}` }}>
-                                    {tournament.clubName}
+                                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                                    Участники
                                 </Text>
                             </Group>
-                        )}
 
-                        {tournament.organizerId && (
-                            <Group gap={5}>
-                                <Text c="dimmed" size="sm">Орг:</Text>
-                                <Group gap={5} component={Link}
-                                       to={`/players/${tournament.organizerId}`}
-                                       style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    <Avatar src={tournament.organizerAvatar} size="sm" radius="xl"
-                                            color="brandRed" />
-                                    <Text fw={500} size="sm"
-                                          style={{ borderBottom: `1px dashed ${c.border}` }}>
-                                        {tournament.organizerName}
+                            <Text fw={700} size="lg">
+                                {participantsCount}
+
+                                {!isRating && (
+                                    <Text span fw={500} c="dimmed">
+                                        {' '} / {maxParticipants}
                                     </Text>
-                                </Group>
-                            </Group>
-                        )}
+                                )}
+                            </Text>
+                        </Paper>
 
-                        {tournament.headJudgeId && (
-                            <Group gap={5}>
-                                <Text c="dimmed" size="sm">ГС:</Text>
-                                <Group gap={5} component={Link}
-                                       to={`/players/${tournament.headJudgeId}`}
-                                       style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    <Avatar src={tournament.headJudgeAvatar} size="sm" radius="xl"
-                                            color="violet" />
-                                    <Text fw={500} size="sm"
-                                          style={{ borderBottom: `1px dashed ${c.border}` }}>
-                                        {tournament.headJudgeName}
-                                    </Text>
-                                </Group>
-                            </Group>
-                        )}
 
-                        {isRating && <RatingThresholdInfo tournament={tournament} />}
                     </Group>
 
+                    {/* RATING */}
+                    {isRating && (
+                        <Paper
+                            withBorder
+                            radius="md"
+                            p="md"
+                            mt="md"
+                            style={{
+                                backgroundColor: c.surface3,
+                            }}
+                        >
+                            <Text
+                                size="xs"
+                                c="dimmed"
+                                tt="uppercase"
+                                fw={700}
+                                mb={8}
+                            >
+                                Рейтинг
+                            </Text>
+
+                            <RatingThresholdInfo tournament={tournament} />
+                        </Paper>
+                    )}
+
+
+                    {/* ACTIONS */}
                     <Group mt="xl" wrap="wrap" gap="sm">
+
                         {tournament.settings?.socialLink && (
                             <Button
                                 component="a"
-                                href={tournament.settings.socialLink.startsWith('http')
-                                    ? tournament.settings.socialLink
-                                    : `https://${tournament.settings.socialLink}`}
+                                href={
+                                    tournament.settings.socialLink.startsWith('http')
+                                        ? tournament.settings.socialLink
+                                        : `https://${tournament.settings.socialLink}`
+                                }
                                 target="_blank"
                                 leftSection={<IconBrandVk size={20} />}
                                 variant="default"
@@ -145,31 +173,143 @@ export default function TournamentHeader({
                             </Button>
                         )}
 
-                        {isRegistrationOpen && !isRating && user
-                                && !isAlreadyParticipant && !isRequestSent && (
-                            <Button color="green" onClick={onRegister}>Подать заявку</Button>
-                        )}
+                        {isRegistrationOpen &&
+                            !isRating &&
+                            user &&
+                            !isAlreadyParticipant &&
+                            !isRequestSent && (
+                                <Button color="green" onClick={onRegister}>
+                                    Подать заявку
+                                </Button>
+                            )}
 
                         {isRequestSent && (
                             <Button disabled variant="light" color="yellow">
                                 Заявка на рассмотрении
                             </Button>
                         )}
+
                         {isAlreadyParticipant && (
-                            <Button disabled variant="light" color="blue">Вы участник</Button>
+                            <Button disabled variant="light" color="blue">
+                                Вы участник
+                            </Button>
                         )}
 
                         {canManage && (
-                            <Button component={Link}
-                                    to={`/tournaments/${tournament.id}/manage`}
-                                    leftSection={<IconSettings size={18} />}
-                                    color="orange" variant="outline">
+                            <Button
+                                component={Link}
+                                to={`/tournaments/${tournament.id}/manage`}
+                                leftSection={<IconSettings size={18} />}
+                                color="orange"
+                                variant="outline"
+                            >
                                 Настроить турнир
                             </Button>
                         )}
                     </Group>
-                </div>
-            </Group>
+                </Grid.Col>
+
+                {/* RIGHT SIDE */}
+                <Grid.Col span={{ base: 12, md: 4 }}>
+
+                    <Stack gap="md">
+
+                        {/* ORGANIZER */}
+                        {tournament.organizerId && (
+                            <Paper
+                                withBorder
+                                p="md"
+                                radius="md"
+                                style={{ backgroundColor: c.surface3 }}
+                            >
+                                <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    tt="uppercase"
+                                    fw={700}
+                                    mb="xs"
+                                >
+                                    Организатор
+                                </Text>
+
+                                <Group
+                                    component={Link}
+                                    to={`/players/${tournament.organizerId}`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: 'inherit',
+                                    }}
+                                    wrap="nowrap"
+                                >
+                                    <Avatar
+                                        src={tournament.organizerAvatar}
+                                        size="lg"
+                                        radius="xl"
+                                        color="brandRed"
+                                    />
+
+                                    <div>
+                                        <Text fw={700} size="lg">
+                                            {tournament.organizerName}
+                                        </Text>
+
+                                        <Text size="xs" c="dimmed">
+                                            Перейти в профиль
+                                        </Text>
+                                    </div>
+                                </Group>
+                            </Paper>
+                        )}
+
+                        {/* HEAD JUDGE */}
+                        {tournament.headJudgeId && (
+                            <Paper
+                                withBorder
+                                p="md"
+                                radius="md"
+                                style={{ backgroundColor: c.surface3 }}
+                            >
+                                <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    tt="uppercase"
+                                    fw={700}
+                                    mb="xs"
+                                >
+                                    ГС турнира
+                                </Text>
+
+                                <Group
+                                    component={Link}
+                                    to={`/players/${tournament.headJudgeId}`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: 'inherit',
+                                    }}
+                                    wrap="nowrap"
+                                >
+                                    <Avatar
+                                        src={tournament.headJudgeAvatar}
+                                        size="lg"
+                                        radius="xl"
+                                        color="violet"
+                                    />
+
+                                    <div>
+                                        <Text fw={700} size="lg">
+                                            {tournament.headJudgeName}
+                                        </Text>
+
+                                        <Text size="xs" c="dimmed">
+                                            Перейти в профиль
+                                        </Text>
+                                    </div>
+                                </Group>
+                            </Paper>
+                        )}
+                    </Stack>
+                </Grid.Col>
+            </Grid>
         </Paper>
     );
 }

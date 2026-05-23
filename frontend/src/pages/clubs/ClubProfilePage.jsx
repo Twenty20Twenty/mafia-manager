@@ -221,8 +221,13 @@ export default function ClubProfilePage() {
                 <Grid gutter="xl" align="flex-start">
                     <Grid.Col span={{ base: 12, md: 8 }}>
                         <Group align="flex-start" wrap="nowrap" gap={{ base: 'sm', sm: 'md' }}>
-                            <Avatar src={club.logoUrl} size={{ base: 72, sm: 120 }} radius="md"
-                                    bg="white" p={5} style={{ flexShrink: 0 }} />
+                            <Avatar
+                                src={club.logoUrl}
+                                w={150}
+                                h={150}
+                                radius="50%"
+                                style={{ flexShrink: 0 }}
+                            />
                             <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
                                 <Group wrap="wrap" gap="xs">
                                     <Title order={1} size={{ base: 'h2', sm: 'h1' }}>{club.name}</Title>

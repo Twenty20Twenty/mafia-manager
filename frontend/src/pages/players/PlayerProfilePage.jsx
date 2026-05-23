@@ -131,8 +131,9 @@ export default function PlayerProfilePage() {
                 <Group align="flex-start" wrap="nowrap">
                     <Avatar
                         src={player.avatarUrl}
-                        size={{ base: 72, sm: 120 }}
-                        radius={120}
+                        w={100}
+                        h={100}
+                        radius="50%"
                         color="brandRed"
                         style={{ flexShrink: 0 }}
                     >
