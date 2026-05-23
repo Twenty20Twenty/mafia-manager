@@ -39,6 +39,8 @@ export default function ClubsPage() {
         return () => clearTimeout(timer);
     }, [user]);
 
+
+
     const filteredClubs = useMemo(() =>
         clubs.filter(club =>
             club.name.toLowerCase().includes(search.toLowerCase()) ||

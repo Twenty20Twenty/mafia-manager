@@ -5,6 +5,7 @@ import { IconSearch } from '@tabler/icons-react';
 import api from '../../api/axios';
 import TournamentCard from './components/TournamentCard';
 import { DEBOUNCE_MS } from './constants/tournamentConstants';
+import { sortTournaments } from './utils/tournamentSortUtils';
 
 export default function TournamentsPage() {
     const [search, setSearch]             = useState('');
@@ -22,8 +23,10 @@ export default function TournamentsPage() {
             if (type   && type   !== 'all') params.type   = type;
             if (status && status !== 'all') params.status = status;
             if (searchValue?.trim())        params.search = searchValue.trim();
+
             const res = await api.get('/tournaments', { params });
-            setTournaments(res.data);
+            // Сортируем на клиенте: новые первее, завершённые/архивные в конец
+            setTournaments(sortTournaments(res.data));
         } catch (error) {
             console.error('Ошибка загрузки турниров', error);
         } finally {
@@ -45,34 +48,20 @@ export default function TournamentsPage() {
 
     return (
         <Container size="xl" py="xl">
-            {/* Заголовок + фильтры
-                Десктоп: всё в одну строку (justify="space-between")
-                Мобилка: заголовок сверху, фильтры стопкой снизу */}
+            {/* Десктоп */}
             <Group justify="space-between" mb="xl" align="flex-start">
                 <Title order={2}>Турниры и Рейтинги</Title>
-
-                {/* Десктоп: горизонтальные фильтры */}
                 <Group visibleFrom="sm">
                     <Select
                         placeholder="Тип турнира"
-                        data={[
-                            { value: 'all',        label: 'Все типы'  },
-                            { value: 'individual', label: 'Личные'    },
-                            { value: 'team',       label: 'Командные' },
-                            { value: 'season',     label: 'Рейтинги'  },
-                        ]}
+                        data={TYPE_OPTIONS}
                         value={typeFilter}
                         onChange={v => setTypeFilter(v || 'all')}
                         w={170}
                     />
                     <Select
                         placeholder="Статус"
-                        data={[
-                            { value: 'all',          label: 'Все статусы'  },
-                            { value: 'registration', label: 'Регистрация'  },
-                            { value: 'active',       label: 'Активные'     },
-                            { value: 'completed',    label: 'Завершённые'  },
-                        ]}
+                        data={STATUS_OPTIONS}
                         value={statusFilter}
                         onChange={v => setStatusFilter(v || 'all')}
                         w={165}
@@ -87,7 +76,7 @@ export default function TournamentsPage() {
                 </Group>
             </Group>
 
-            {/* Мобилка: фильтры стопкой под заголовком */}
+            {/* Мобилка */}
             <Box hiddenFrom="sm" mb="md">
                 <Stack gap="xs">
                     <TextInput
@@ -99,23 +88,13 @@ export default function TournamentsPage() {
                     <Group grow gap="xs">
                         <Select
                             placeholder="Тип"
-                            data={[
-                                { value: 'all',        label: 'Все типы'  },
-                                { value: 'individual', label: 'Личные'    },
-                                { value: 'team',       label: 'Командные' },
-                                { value: 'season',     label: 'Рейтинги'  },
-                            ]}
+                            data={TYPE_OPTIONS}
                             value={typeFilter}
                             onChange={v => setTypeFilter(v || 'all')}
                         />
                         <Select
                             placeholder="Статус"
-                            data={[
-                                { value: 'all',          label: 'Все статусы' },
-                                { value: 'registration', label: 'Регистрация' },
-                                { value: 'active',       label: 'Активные'    },
-                                { value: 'completed',    label: 'Завершённые' },
-                            ]}
+                            data={STATUS_OPTIONS}
                             value={statusFilter}
                             onChange={v => setStatusFilter(v || 'all')}
                         />
@@ -137,3 +116,19 @@ export default function TournamentsPage() {
         </Container>
     );
 }
+
+// ── Константы для Select'ов ───────────────────────────────────────────────────
+
+const TYPE_OPTIONS = [
+    { value: 'all',        label: 'Все типы'  },
+    { value: 'individual', label: 'Личные'    },
+    { value: 'team',       label: 'Командные' },
+    { value: 'season',     label: 'Рейтинги'  },
+];
+
+const STATUS_OPTIONS = [
+    { value: 'all',          label: 'Все статусы' },
+    { value: 'registration', label: 'Регистрация' },
+    { value: 'active',       label: 'Активные'    },
+    { value: 'completed',    label: 'Завершённые' },
+];

@@ -342,6 +342,26 @@ public class TournamentController {
         }
     }
 
+    @Operation(
+            summary = "Удалить турнир [Организатор / ADMIN]",
+            description = "Каскадно удаляет все игры, участников, исключения рассадки. " +
+                    "Требует подтверждения — клиент должен передать точное название турнира.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@permissionService.canManageTournament(#id)")
+    public ResponseEntity<?> deleteTournament(
+            @PathVariable Long id,
+            @RequestParam String confirmTitle
+    ) {
+        try {
+            tournamentService.deleteTournament(id, confirmTitle);
+            return ResponseEntity.ok("Турнир удалён");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // ── Вспомогательные методы контроллера ───────────────────────────────────
 
     private SetFinalistsRequest buildLockRequest() {
@@ -349,5 +369,4 @@ public class TournamentController {
         req.setLock(true);
         return req;
     }
-
 }

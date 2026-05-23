@@ -126,7 +126,7 @@ export function useGameProtocol({ tournamentId, gameId, isNewRatingGame }) {
         setSaving(true);
         try {
             const dto = buildProtocolDto(game.id, Number(tournamentId), winner, isDraft, gameDate, slots, bestMove);
-            console.log(dto);
+
             await gamesApi.saveProtocol(game.id, dto);
             alert(isDraft ? 'Черновик сохранён!' : 'Протокол сохранён!');
             navigate(`/tournaments/${tournamentId}`);

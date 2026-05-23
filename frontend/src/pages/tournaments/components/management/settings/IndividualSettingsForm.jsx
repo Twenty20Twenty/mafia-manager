@@ -22,16 +22,11 @@ const FINAL_COEFFICIENT_OPTIONS = [
     { value: '1.5', label: '1.5'                     },
 ];
 
-/** Конвертирует List<Integer> → строку "30 20 10" для отображения в поле */
 export function swissTiersToString(tiers) {
     if (!tiers || !Array.isArray(tiers)) return '';
     return tiers.join(' ');
 }
 
-/**
- * Парсит строку "30 20 10" → [30, 20, 10].
- * Игнорирует нецифровые токены. Возвращает null при пустом вводе.
- */
 export function parseSwissTiers(str) {
     if (!str || !str.trim()) return null;
     const nums = str
@@ -42,7 +37,6 @@ export function parseSwissTiers(str) {
     return nums.length > 0 ? nums : null;
 }
 
-/** Проверяет, что сумма тиров кратна числу участников (кратна 10) */
 export function validateSwissTiers(tiers, maxParticipants) {
     if (!tiers) return null;
     const sum = tiers.reduce((a, b) => a + b, 0);
@@ -59,7 +53,6 @@ export function validateSwissTiers(tiers, maxParticipants) {
 export default function IndividualSettingsForm({ settings, setSettings, citiesData }) {
     const set = (field, val) => setSettings(prev => ({ ...prev, [field]: val }));
 
-    // Локальная строковая версия тиров для TextInput
     const tiersStr = swissTiersToString(settings.swissTiers);
     const tiersErr = settings.isSwissSystem && settings.swissTiers
         ? validateSwissTiers(settings.swissTiers, settings.maxParticipants)
@@ -67,15 +60,31 @@ export default function IndividualSettingsForm({ settings, setSettings, citiesDa
 
     const handleTiersChange = (raw) => {
         const parsed = parseSwissTiers(raw);
-        // Сохраняем сырую строку для отображения, а в settings — распарсенный массив
         set('swissTiersRaw', raw);
         set('swissTiers', parsed);
     };
 
-    // Показываем либо сырую строку (если редактируется), либо форматированную
     const displayTiers = settings.swissTiersRaw !== undefined
         ? settings.swissTiersRaw
         : tiersStr;
+
+    const handleSingleDayToggle = (checked) => {
+        set('singleDay', checked);
+        // При переключении сбрасываем даты
+        if (checked) {
+            // single mode: берём первую дату как единственную
+            const first = settings.dates?.[0] ?? null;
+            set('dates', [first, first]);
+        } else {
+            // range mode: оставляем текущие
+        }
+    };
+
+    const handleSingleDateChange = (val) => {
+        set('dates', [val, val]);
+    };
+
+    const isSingleDay = settings.singleDay ?? false;
 
     return (
         <Stack gap="lg">
@@ -116,14 +125,35 @@ export default function IndividualSettingsForm({ settings, setSettings, citiesDa
                     mb="md"
                 />
 
-                <DatePickerInput
-                    type="range"
-                    label="Даты проведения"
-                    leftSection={<IconCalendar size={16} />}
-                    value={settings.dates}
-                    onChange={val => set('dates', val)}
-                    mb="md"
-                />
+                {/* Переключатель один день / диапазон */}
+                <Group justify="space-between" mb="xs">
+                    <Text size="sm" fw={500}>Даты проведения</Text>
+                    <Switch
+                        label="Один день"
+                        size="sm"
+                        checked={isSingleDay}
+                        onChange={e => handleSingleDayToggle(e.currentTarget.checked)}
+                    />
+                </Group>
+
+                {isSingleDay ? (
+                    <DatePickerInput
+                        placeholder="Выберите дату"
+                        leftSection={<IconCalendar size={16} />}
+                        value={settings.dates?.[0] ?? null}
+                        onChange={handleSingleDateChange}
+                        mb="md"
+                    />
+                ) : (
+                    <DatePickerInput
+                        type="range"
+                        placeholder="Выберите период"
+                        leftSection={<IconCalendar size={16} />}
+                        value={settings.dates}
+                        onChange={val => set('dates', val)}
+                        mb="md"
+                    />
+                )}
 
                 <TextInput
                     label="Ссылка на соц. сеть"
@@ -204,15 +234,12 @@ export default function IndividualSettingsForm({ settings, setSettings, citiesDa
                             value={displayTiers}
                             onChange={e => handleTiersChange(e.currentTarget.value)}
                             error={tiersErr}
-                            onBlur={() => {
-                                // При потере фокуса — форматируем строку из распарсенного массива
-                                set('swissTiersRaw', undefined);
-                            }}
+                            onBlur={() => set('swissTiersRaw', undefined)}
                         />
 
                         {settings.swissTiers && !tiersErr && (
                             <Text size="xs" c="dimmed" mt={4}>
-                                Тиров: {settings.swissTiers.length} — 
+                                Тиров: {settings.swissTiers.length} —
                                 {settings.swissTiers.map((t, i) => ` Группа ${i + 1}: ${t} уч.`).join(',')}
                             </Text>
                         )}

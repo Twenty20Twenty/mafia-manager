@@ -99,14 +99,12 @@ export default function TournamentProfilePage() {
                             <Text hiddenFrom="sm">Игры</Text>
                         </Box>
                     </Tabs.Tab>
-                    {!isTeamTournament && (
-                        <Tabs.Tab value="nominations" leftSection={<IconStar size={16} />}>
-                            <Box style={{ textAlign: 'left' }}>
-                                <Text visibleFrom="sm">Номинации</Text>
-                                <Text hiddenFrom="sm">Номин.</Text>
-                            </Box>
-                        </Tabs.Tab>
-                    )}
+                    <Tabs.Tab value="nominations" leftSection={<IconStar size={16} />}>
+                        <Box style={{ textAlign: 'left' }}>
+                            <Text visibleFrom="sm">Номинации</Text>
+                            <Text hiddenFrom="sm">Номин.</Text>
+                        </Box>
+                    </Tabs.Tab>
                     <Tabs.Tab value="participants" leftSection={<IconUsers size={16} />}>
                         <Box style={{ textAlign: 'left' }}>
                             <Text visibleFrom="sm">Участники</Text>
@@ -121,13 +119,15 @@ export default function TournamentProfilePage() {
                 <Tabs.Panel value="games">
                     <TournamentGamesTab tournament={tournament} participantOptions={approvedParticipants} />
                 </Tabs.Panel>
-                {!isTeamTournament && (
-                    <Tabs.Panel value="nominations">
-                        <TournamentNominations tournament={tournament} isRating={isRating} />
-                    </Tabs.Panel>
-                )}
+                <Tabs.Panel value="nominations">
+                    <TournamentNominations tournament={tournament} isRating={isRating} />
+                </Tabs.Panel>
                 <Tabs.Panel value="participants">
-                    <ParticipantsList participants={approvedParticipants} isTeamTournament={isTeamTournament} />
+                    <ParticipantsList
+                        participants={participants}
+                        isTeamTournament={isTeamTournament}
+                        tournamentId={Number(id)}
+                    />
                 </Tabs.Panel>
             </Tabs>
         </Container>

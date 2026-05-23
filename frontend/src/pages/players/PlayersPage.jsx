@@ -117,6 +117,12 @@ function PlayerCard({ player }) {
                 <Text c="dimmed" size="xs">{player.city || 'Не указан'}</Text>
             </Group>
 
+            <Group gap={4} justify="center">
+                <Text size="xs" c="dimmed" truncate style={{ maxWidth: 100 }}>
+                    {player.clubName || "Без клуба"}
+                </Text>
+            </Group>
+
             <Card.Section inheritPadding py="xs" withBorder style={{ backgroundColor: c.surface3 }}>
                 <Group justify="center">
                     <Badge color={player.role === 'admin' ? 'orange' : 'blue'} variant="light" size="sm">

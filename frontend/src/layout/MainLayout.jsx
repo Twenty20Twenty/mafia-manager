@@ -189,7 +189,7 @@ export default function MainLayout() {
             <Drawer opened={opened} onClose={close} size="75%" title="Меню" lockScroll={false}>
                 <Stack gap="md">
                     {renderNavButtons()}
-                    <ThemeToggle />
+                    {/*<ThemeToggle />*/}
                     {user && (
                         <Button color="red" variant="subtle" onClick={() => { logout(); close(); }}>
                             Выйти

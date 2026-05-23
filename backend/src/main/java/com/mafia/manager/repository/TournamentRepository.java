@@ -156,30 +156,40 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("sortBy") String sortBy
     );
 
-    // ──────────────────────────────────────────────────────────────
-    // КОМАНДНЫЙ ЛИДЕРБОРД — те же правила snake_case алиасов
-    // ──────────────────────────────────────────────────────────────
+    // ────────────────────
+    // КОМАНДНЫЙ ЛИДЕРБОРД
+    // ────────────────────
     @Query(value = """
                 SELECT
-                    tt.id                                        AS team_id,
-                    tt.name                                      AS team_name,
-                    COALESCE(SUM(gs.computed_score), 0)          AS total_score,
-                    COUNT(gs.id)                                 AS games_played,
+                    tt.id                                                           AS teamId,
+                    tt.name                                                         AS teamName,
+                    COUNT(DISTINCT tp.user_id)                                      AS membersCount,
+                    COALESCE(SUM(gs.computed_score), 0)                             AS totalScore,
+                    COUNT(gs.id)                                                    AS gamesCount,
                     COUNT(CASE
                         WHEN ((gs.role IN ('civilian','sheriff') AND g.winner = 'red')
                            OR (gs.role IN ('mafia','don')        AND g.winner = 'black'))
                         THEN 1
-                    END)                                         AS total_wins
+                    END)                                                            AS totalWins,
+                    COUNT(CASE WHEN gs.role = 'sheriff' AND g.winner = 'red'   THEN 1 END) AS sheriffWins,
+                    COUNT(CASE WHEN gs.role = 'don'     AND g.winner = 'black' THEN 1 END) AS donWins,
+                    COUNT(CASE WHEN gs.is_first_killed = TRUE THEN 1 END)           AS firstKilledCount,
+                    COALESCE(SUM(gs.extra_points_positive), 0)                      AS extraPointsPositive,
+                    COALESCE(SUM(gs.extra_points_negative), 0)                      AS extraPointsNegative,
+                    COALESCE(SUM(gs.penalty_points), 0)                             AS penaltyPoints,
+                    COALESCE(SUM(gs.compensation_points), 0)                        AS compensationPoints,
+                    COALESCE(SUM(bm.points), 0)                                     AS bestMovePoints
                 FROM tournament_teams tt
                 JOIN tournament_participants tp ON tp.team_id = tt.id
                 LEFT JOIN games g       ON g.tournament_id = tt.tournament_id
                     AND g.status = 'completed'
                     AND g.stage  = 'qualifying'
                 LEFT JOIN game_slots gs ON gs.game_id = g.id AND gs.user_id = tp.user_id
+                LEFT JOIN best_moves bm ON bm.game_id = g.id AND bm.author_slot_id = gs.id
                 WHERE tt.tournament_id = :tournamentId
                   AND tp.status = 'approved'
                 GROUP BY tt.id, tt.name
-                ORDER BY total_score DESC
+                ORDER BY totalScore DESC
             """, nativeQuery = true)
     List<TeamLeaderboardEntryDto> getTeamLeaderboard(@Param("tournamentId") Long tournamentId);
 

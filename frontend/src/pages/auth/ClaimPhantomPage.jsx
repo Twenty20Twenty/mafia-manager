@@ -54,7 +54,8 @@ export default function ClaimPhantomPage() {
 
             <Paper withBorder shadow="md" p={{ base: 'md', sm: 30 }} mt={30} radius="md">
                 <Alert variant="light" color="blue" icon={<IconInfoCircle size={16} />} mb="md">
-                    Код привязки выдаётся организатором турнира. Введите никнейм точно так, как он записан в профиле.
+                    Код привязки выдаётся администратором системы. Если у вас нет кода —
+                    <Anchor href="https://t.me/MafiaManagerNsk" target="_blank"> напишите администратору</Anchor>.
                 </Alert>
 
                 {error && (

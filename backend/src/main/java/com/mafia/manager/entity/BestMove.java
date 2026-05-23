@@ -34,7 +34,6 @@ public class BestMove {
     @Column(name = "guessed_count")
     private Integer guessedCount;
 
-    // ИСПРАВЛЕНО: Добавлена точность
     @Column(precision = 3, scale = 2)
     private BigDecimal points;
 }

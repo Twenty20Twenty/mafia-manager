@@ -10,10 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.mafia.manager.entity.enums.TournamentStatus.completed;
@@ -379,9 +376,11 @@ public class TournamentService {
         List<LeaderboardEntryDto> leaderboard = tournamentRepository.getLeaderboard(id, includeFinals, resolvedSortBy);
 
         if (areResultsHidden(t) && !isCurrentUserManager(t)) {
-            return leaderboard.stream()
+            List<LeaderboardEntryDto> shuffledList = leaderboard.stream()
                     .map(LeaderboardEntryDto::withHiddenScores)
                     .collect(Collectors.toList());
+            Collections.shuffle(shuffledList);
+            return shuffledList;
         }
 
         return leaderboard;
@@ -400,9 +399,11 @@ public class TournamentService {
         List<TeamLeaderboardEntryDto> leaderboard = tournamentRepository.getTeamLeaderboard(id);
 
         if (areResultsHidden(t) && !isCurrentUserManager(t)) {
-            return leaderboard.stream()
+            List<TeamLeaderboardEntryDto> shuffledList = leaderboard.stream()
                     .map(TeamLeaderboardEntryDto::withHiddenScores)
                     .collect(Collectors.toList());
+            Collections.shuffle(shuffledList);
+            return shuffledList;
         }
 
         return leaderboard;
@@ -842,6 +843,27 @@ public class TournamentService {
             throw new RuntimeException(
                     "Следующие игроки не являются участниками турнира: " + notFound);
         }
+    }
+
+    /**
+     * Удаляет турнир со всеми связанными данными.
+     * Проверяет, что confirmTitle совпадает с реальным названием турнира.
+     *
+     * @throws IllegalArgumentException если confirmTitle не совпадает
+     * @throws AccessDeniedException    если пользователь не организатор и не admin
+     */
+    @Transactional
+    public void deleteTournament(Long id, String confirmTitle) {
+        Tournament t = tournamentRepository.findById(id).orElseThrow();
+        checkManagerRights(t);
+
+        if (!t.getTitle().equals(confirmTitle)) {
+            throw new IllegalArgumentException(
+                    "Название не совпадает. Введите точное название турнира для подтверждения."
+            );
+        }
+
+        tournamentRepository.delete(t);
     }
 
     // ── МАППИНГ ───────────────────────────────────────────────────────────────

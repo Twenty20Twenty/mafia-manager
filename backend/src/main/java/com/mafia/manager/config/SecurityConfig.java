@@ -65,6 +65,7 @@ public class SecurityConfig {
 
                         // ── 3. Админская зона ─────────────────────────────
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tournaments/**").hasRole("ADMIN")
 
                         // ── 4. Всё остальное — только с токеном ──────────
                         .anyRequest().authenticated()

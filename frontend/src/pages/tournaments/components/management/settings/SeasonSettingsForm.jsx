@@ -1,6 +1,5 @@
 // src/pages/tournaments/components/management/settings/SeasonSettingsForm.jsx
-// Настройки для рейтингового турнира (season)
-import { Stack, Paper, Title, Select, Switch, NumberInput, Textarea, TextInput, Group } from '@mantine/core';
+import { Stack, Paper, Title, Select, Switch, NumberInput, Textarea, TextInput, Group, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconCalendar } from '@tabler/icons-react';
 
@@ -14,9 +13,22 @@ const STATUS_OPTIONS = [
 export default function SeasonSettingsForm({ settings, setSettings, citiesData }) {
     const set = (field, val) => setSettings(prev => ({ ...prev, [field]: val }));
 
+    const isSingleDay = settings.singleDay ?? false;
+
+    const handleSingleDayToggle = (checked) => {
+        set('singleDay', checked);
+        if (checked) {
+            const first = settings.dates?.[0] ?? null;
+            set('dates', [first, first]);
+        }
+    };
+
+    const handleSingleDateChange = (val) => {
+        set('dates', [val, val]);
+    };
+
     return (
         <Stack gap="lg">
-            {/* Основная информация */}
             <Paper withBorder p="md">
                 <Title order={4} mb="md">Основные настройки</Title>
 
@@ -53,14 +65,34 @@ export default function SeasonSettingsForm({ settings, setSettings, citiesData }
                     mb="md"
                 />
 
-                <DatePickerInput
-                    type="range"
-                    label="Даты проведения"
-                    leftSection={<IconCalendar size={16} />}
-                    value={settings.dates}
-                    onChange={val => set('dates', val)}
-                    mb="md"
-                />
+                <Group justify="space-between" mb="xs">
+                    <Text size="sm" fw={500}>Даты проведения</Text>
+                    <Switch
+                        label="Один день"
+                        size="sm"
+                        checked={isSingleDay}
+                        onChange={e => handleSingleDayToggle(e.currentTarget.checked)}
+                    />
+                </Group>
+
+                {isSingleDay ? (
+                    <DatePickerInput
+                        placeholder="Выберите дату"
+                        leftSection={<IconCalendar size={16} />}
+                        value={settings.dates?.[0] ?? null}
+                        onChange={handleSingleDateChange}
+                        mb="md"
+                    />
+                ) : (
+                    <DatePickerInput
+                        type="range"
+                        placeholder="Выберите период"
+                        leftSection={<IconCalendar size={16} />}
+                        value={settings.dates}
+                        onChange={val => set('dates', val)}
+                        mb="md"
+                    />
+                )}
 
                 <TextInput
                     label="Ссылка на соц. сеть"
@@ -71,10 +103,8 @@ export default function SeasonSettingsForm({ settings, setSettings, citiesData }
                 />
             </Paper>
 
-            {/* Параметры рейтинга */}
             <Paper withBorder p="md">
                 <Title order={4} mb="md">Параметры рейтинга</Title>
-
                 <NumberInput
                     label="Порог рейтинга (%)"
                     description="Минимальный % игр для включения в рейтинг (0–100)"
@@ -85,7 +115,6 @@ export default function SeasonSettingsForm({ settings, setSettings, citiesData }
                 />
             </Paper>
 
-            {/* Видимость */}
             <Paper withBorder p="md">
                 <Title order={4} mb="md">Видимость результатов</Title>
                 <Switch

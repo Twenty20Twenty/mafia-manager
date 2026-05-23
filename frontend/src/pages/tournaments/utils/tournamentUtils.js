@@ -14,6 +14,7 @@ export function resolveCanManage(user, tournament) {
 }
 
 export function resolveCanEdit(user, tournament, game) {
+    if (tournament?.status === 'completed') return false;
     if (!user) return false;
     if (user.isAdmin)                        return true;
     if (user.id === tournament?.organizerId) return true;
@@ -48,16 +49,24 @@ export function mapExceptions(data) {
 
 /**
  * Инициализирует локальный state настроек из DTO турнира.
- * cityId нужен для городского селекта в SettingsTab.
- * title копируется, чтобы можно было переименовывать.
+ * Определяет режим singleDay: если startDate === endDate — включаем одиночный режим.
  */
 export function initSettings(t) {
+    const startDate = t.startDate ? new Date(t.startDate) : null;
+    const endDate   = t.endDate   ? new Date(t.endDate)   : null;
+
+    // Определяем режим одного дня: обе даты заданы и одинаковы
+    const isSingleDay = !!(
+        startDate && endDate &&
+        dayjs(startDate).isSame(dayjs(endDate), 'day')
+    );
+
     return {
         title:              t.title                        || '',
         status:             t.status                       || 'registration',
         description:        t.description                  || '',
         link:               t.settings?.socialLink         || '',
-        cityId:             t.cityId                       || null,   // нужен отдельный cityId в DTO
+        cityId:             t.cityId                       || null,
         // Общие
         maxParticipants:    t.settings?.maxParticipants    || 10,
         areResultsHidden:   t.settings?.areResultsHidden   || false,
@@ -76,11 +85,10 @@ export function initSettings(t) {
         ratingThreshold:    t.settings?.ratingThreshold    ?? 0,
         // Судьи
         finalJudgeId:       t.settings?.finalJudgeId       || null,
-        // Даты
-        dates: [
-            t.startDate ? new Date(t.startDate) : null,
-            t.endDate   ? new Date(t.endDate)   : null,
-        ],
+        // Даты — всегда массив [start, end]
+        dates: [startDate, endDate],
+        // Режим одного дня
+        singleDay: isSingleDay,
     };
 }
 
@@ -88,10 +96,24 @@ export function initSettings(t) {
 
 /**
  * Собирает payload для обновления турнира.
- * cityId передаётся на верхнем уровне (бэкенд читает из request.getCityId()).
- * title тоже на верхнем уровне — бэкенд вызывает t.setTitle().
+ * Если singleDay=true, startDate и endDate совпадают.
  */
 export function buildUpdatePayload(tournament, settings, headJudgeId) {
+    const isSingleDay = settings.singleDay ?? false;
+
+    let startDate = null;
+    let endDate   = null;
+
+    if (isSingleDay) {
+        // В режиме одного дня dates[0] === dates[1] (выставляется в форме)
+        const d = settings.dates?.[0];
+        startDate = d ? dayjs(d).format('YYYY-MM-DD') : null;
+        endDate   = startDate;
+    } else {
+        startDate = settings.dates?.[0] ? dayjs(settings.dates[0]).format('YYYY-MM-DD') : null;
+        endDate   = settings.dates?.[1] ? dayjs(settings.dates[1]).format('YYYY-MM-DD') : null;
+    }
+
     return {
         title:        settings.title || tournament.title,
         description:  settings.description,
@@ -100,8 +122,8 @@ export function buildUpdatePayload(tournament, settings, headJudgeId) {
         headJudgeId:  headJudgeId ? Number(headJudgeId) : null,
         finalJudgeId: settings.finalJudgeId ? Number(settings.finalJudgeId) : null,
         cityId:       settings.cityId ? Number(settings.cityId) : null,
-        startDate:    settings.dates[0] ? dayjs(settings.dates[0]).format('YYYY-MM-DD') : null,
-        endDate:      settings.dates[1] ? dayjs(settings.dates[1]).format('YYYY-MM-DD') : null,
+        startDate,
+        endDate,
         settings: {
             ...tournament.settings,
             maxParticipants:    settings.maxParticipants,

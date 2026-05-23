@@ -9,4 +9,7 @@ public interface ClubRequestRepository extends JpaRepository<ClubRequest, Long> 
     List<ClubRequest> findByClubId(Long clubId);
     Optional<ClubRequest> findByUserIdAndClubId(Long userId, Long clubId);
     boolean existsByUserIdAndClubId(Long userId, Long clubId);
+
+    /** Все активные заявки конкретного пользователя (во все клубы). */
+    List<ClubRequest> findByUserId(Long userId);
 }

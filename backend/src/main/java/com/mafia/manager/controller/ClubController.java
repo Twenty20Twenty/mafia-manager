@@ -1,6 +1,7 @@
 package com.mafia.manager.controller;
 
 import com.mafia.manager.dto.ClubDto;
+import com.mafia.manager.dto.ClubRequestStatusDto;
 import com.mafia.manager.dto.CreateClubRequest;
 import com.mafia.manager.dto.UserDto;
 import com.mafia.manager.service.ClubService;
@@ -93,6 +94,24 @@ public class ClubController {
     public ResponseEntity<?> join(@PathVariable Long id) {
         clubService.joinRequest(id);
         return ResponseEntity.ok("Заявка отправлена");
+    }
+
+    @Operation(
+            summary = "Статус заявки текущего пользователя относительно конкретного клуба",
+            description = """
+                    Возвращает объект с тремя полями:
+                    - pendingClubId: ID клуба, в который подана заявка (null — заявок нет)
+                    - hasPendingRequestForThisClub: true если заявка именно в этот клуб
+                    - hasPendingRequestForOtherClub: true если заявка в другой клуб
+                    
+                    Если пользователь не авторизован — возвращает пустой статус (все false, null).
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/{id}/my-request-status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ClubRequestStatusDto> getMyRequestStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(clubService.getMyRequestStatus(id));
     }
 
     @Operation(summary = "Список заявок на вступление [Президент]",

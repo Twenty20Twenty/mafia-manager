@@ -56,7 +56,10 @@ export default function TournamentManagementPage() {
 
     const isRating    = tournament.type === 'season';
     const isTeam      = tournament.type === 'team';
+    const teamSize = tournament.settings?.teamSize ?? 0;
+    const maxParticipants = tournament.settings?.maxParticipants ?? 10;
     const tablesCount = Math.ceil(approvedParticipants.length / 10) || 1;
+    const canDelete = user.isAdmin;
 
     return (
         <Container size="lg" py="xl">
@@ -106,7 +109,10 @@ export default function TournamentManagementPage() {
                     <ParticipantsTab
                         isRating={isRating}
                         isTeam={isTeam}
+                        teamSize={teamSize}
+                        tournamentId={Number(id)}
                         approvedParticipants={approvedParticipants}
+                        maxParticipants={maxParticipants}
                         pendingRequests={pendingRequests}
                         addPlayerOptions={addPlayerOptions}
                         selectedPlayerId={selectedPlayerId}
@@ -136,7 +142,6 @@ export default function TournamentManagementPage() {
                 {!isRating && (
                     <Tabs.Panel value="seeding" pt="md">
                         <SeedingTab
-                            // БАГ 4 FIX: передаём tournamentId
                             tournamentId={Number(id)}
                             exceptions={exceptions}
                             exceptionP1={exceptionP1}
@@ -170,10 +175,13 @@ export default function TournamentManagementPage() {
                         setSettings={setSettings}
                         isRating={isRating}
                         isTeam={isTeam}
+                        canDelete={canDelete}
                         allJudgesOptions={allJudgesOptions}
                         headJudgeId={headJudgeId}
                         setHeadJudgeId={setHeadJudgeId}
                         onSave={handleSaveSettings}
+                        tournament={tournament}
+
                     />
                 </Tabs.Panel>
             </Tabs>

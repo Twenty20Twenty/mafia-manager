@@ -4,13 +4,19 @@ import { useState, useEffect, useMemo } from 'react';
 import {
     Container, Paper, Avatar, Title, Text, Group, Grid,
     Stack, Badge, Button, Center, Loader, Select,
-    RingProgress, Tooltip
+    RingProgress, Tooltip, Tabs, Box
 } from '@mantine/core';
-import { IconMapPin, IconArrowLeft, IconDeviceGamepad2, IconTrophy } from '@tabler/icons-react';
+import {
+    IconMapPin, IconArrowLeft, IconDeviceGamepad2,
+    IconTrophy, IconChartBar, IconSwords
+} from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import api from '../../api/axios';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import PlayerTournamentsList from './components/PlayerTournamentsList';
+
+// ── Конфигурация ролей ────────────────────────────────────────────────────────
 
 const ROLE_CONFIG = {
     civilian: { label: 'Мирный', color: 'red',    winsFor: 'red'   },
@@ -18,6 +24,8 @@ const ROLE_CONFIG = {
     mafia:    { label: 'Мафия',  color: 'blue',   winsFor: 'black' },
     don:      { label: 'Дон',    color: 'grape',  winsFor: 'black' },
 };
+
+// ── Утилиты ───────────────────────────────────────────────────────────────────
 
 function pct(wins, games) {
     if (!games) return 0;
@@ -37,16 +45,19 @@ function isValidId(id) {
     return !isNaN(n) && n > 0;
 }
 
+// ── Главный компонент ─────────────────────────────────────────────────────────
+
 export default function PlayerProfilePage() {
     const { id } = useParams();
     const c = useThemeColors();
 
-    const [player, setPlayer]               = useState(null);
-    const [club, setClub]                   = useState(null);
-    const [statsList, setStatsList]         = useState([]);
-    const [selectedPeriod, setSelectedPeriod] = useState('all');
-    const [loading, setLoading]             = useState(true);
-    const [notFound, setNotFound]           = useState(false);
+    const [player, setPlayer]                     = useState(null);
+    const [club, setClub]                         = useState(null);
+    const [statsList, setStatsList]               = useState([]);
+    const [selectedPeriod, setSelectedPeriod]     = useState('all');
+    const [loading, setLoading]                   = useState(true);
+    const [notFound, setNotFound]                 = useState(false);
+    const [activeTab, setActiveTab]               = useState('stats');
 
     useEffect(() => {
         if (!isValidId(id)) { setNotFound(true); setLoading(false); return; }
@@ -65,7 +76,9 @@ export default function PlayerProfilePage() {
                     try {
                         const clubRes = await api.get(`/clubs/${playerRes.data.clubId}`);
                         setClub(clubRes.data);
-                    } catch (err) { console.error('Ошибка загрузки клуба', err); }
+                    } catch (err) {
+                        console.error('Ошибка загрузки клуба', err);
+                    }
                 }
             } catch (err) {
                 console.error('Ошибка загрузки профиля', err);
@@ -78,7 +91,11 @@ export default function PlayerProfilePage() {
     }, [id]);
 
     const currentStats  = useMemo(() =>
-        statsList.find(s => selectedPeriod === 'all' ? s.periodYear === null : String(s.periodYear) === selectedPeriod) || null,
+        statsList.find(s =>
+            selectedPeriod === 'all'
+                ? s.periodYear === null
+                : String(s.periodYear) === selectedPeriod
+        ) || null,
         [statsList, selectedPeriod]
     );
     const periodOptions = useMemo(() => buildPeriodOptions(statsList), [statsList]);
@@ -88,7 +105,8 @@ export default function PlayerProfilePage() {
     if (notFound || !player) {
         return (
             <Container py="xl">
-                <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} component={Link} to="/players" mb="md" color="gray">
+                <Button variant="subtle" leftSection={<IconArrowLeft size={16} />}
+                        component={Link} to="/players" mb="md" color="gray">
                     Назад к списку
                 </Button>
                 <Text c="red">Игрок не найден</Text>
@@ -102,15 +120,22 @@ export default function PlayerProfilePage() {
 
     return (
         <Container size="md" py="xl">
-            <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} component={Link} to="/players" mb="md" color="gray">
+            <Button variant="subtle" leftSection={<IconArrowLeft size={16} />}
+                    component={Link} to="/players" mb="md" color="gray">
                 Назад к списку
             </Button>
 
-            {/* Шапка профиля */}
+            {/* ── Шапка профиля ────────────────────────────────────────────── */}
             <Paper radius="md" p={{ base: 'md', sm: 'xl' }} withBorder mb="xl"
-                style={{ backgroundColor: c.surface2 }}>
+                   style={{ backgroundColor: c.surface2 }}>
                 <Group align="flex-start" wrap="nowrap">
-                    <Avatar src={player.avatarUrl} size={{ base: 72, sm: 120 }} radius={120} color="brandRed" style={{ flexShrink: 0 }}>
+                    <Avatar
+                        src={player.avatarUrl}
+                        size={{ base: 72, sm: 120 }}
+                        radius={120}
+                        color="brandRed"
+                        style={{ flexShrink: 0 }}
+                    >
                         {player.nickname?.substring(0, 2).toUpperCase()}
                     </Avatar>
                     <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
@@ -123,11 +148,16 @@ export default function PlayerProfilePage() {
                             </Group>
                         )}
 
-                        {regDate && <Text size="xs" c="dimmed">В системе с {regDate}</Text>}
+                        {regDate && (
+                            <Text size="xs" c="dimmed">В системе с {regDate}</Text>
+                        )}
 
                         {club && (
-                            <Badge component={Link} to={`/clubs/${club.id}`} color="blue" variant="light"
-                                style={{ cursor: 'pointer', width: 'fit-content' }}>
+                            <Badge
+                                component={Link} to={`/clubs/${club.id}`}
+                                color="blue" variant="light"
+                                style={{ cursor: 'pointer', width: 'fit-content' }}
+                            >
                                 {club.name}
                             </Badge>
                         )}
@@ -135,27 +165,50 @@ export default function PlayerProfilePage() {
                 </Group>
             </Paper>
 
-            {periodOptions.length > 1 && (
-                <Select
-                    label="Период статистики"
-                    data={periodOptions}
-                    value={selectedPeriod}
-                    onChange={v => setSelectedPeriod(v ?? 'all')}
-                    mb="xl"
-                    style={{ maxWidth: 200 }}
-                />
-            )}
+            {/* ── Табы: Статистика / Турниры ────────────────────────────────── */}
+            <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
+                <Tabs.List mb="xl">
+                    <Tabs.Tab value="stats" leftSection={<IconChartBar size={16} />}>
+                        <Box style={{ textAlign: 'left' }}>Статистика</Box>
+                    </Tabs.Tab>
+                    <Tabs.Tab value="tournaments" leftSection={<IconSwords size={16} />}>
+                        <Box style={{ textAlign: 'left' }}>Турниры</Box>
+                    </Tabs.Tab>
+                </Tabs.List>
 
-            {currentStats ? (
-                <StatsSection stats={currentStats} c={c} />
-            ) : (
-                <Paper withBorder p="xl" ta="center" bg="transparent" style={{ borderStyle: 'dashed' }}>
-                    <Text c="dimmed">Нет данных за выбранный период</Text>
-                </Paper>
-            )}
+                {/* ── Вкладка: Статистика ───────────────────────────────────── */}
+                <Tabs.Panel value="stats">
+                    {periodOptions.length > 1 && (
+                        <Select
+                            label="Период статистики"
+                            data={periodOptions}
+                            value={selectedPeriod}
+                            onChange={v => setSelectedPeriod(v ?? 'all')}
+                            mb="xl"
+                            style={{ maxWidth: 200 }}
+                        />
+                    )}
+
+                    {currentStats ? (
+                        <StatsSection stats={currentStats} c={c} />
+                    ) : (
+                        <Paper withBorder p="xl" ta="center" bg="transparent"
+                               style={{ borderStyle: 'dashed' }}>
+                            <Text c="dimmed">Нет данных за выбранный период</Text>
+                        </Paper>
+                    )}
+                </Tabs.Panel>
+
+                {/* ── Вкладка: Турниры ──────────────────────────────────────── */}
+                <Tabs.Panel value="tournaments">
+                    <PlayerTournamentsList userId={Number(id)} />
+                </Tabs.Panel>
+            </Tabs>
         </Container>
     );
 }
+
+// ── StatsSection ─────────────────────────────────────────────────────────────
 
 function StatsSection({ stats, c }) {
     return (
@@ -164,23 +217,41 @@ function StatsSection({ stats, c }) {
                 <Title order={4} mb="md">Общая статистика</Title>
                 <Grid>
                     <Grid.Col span={{ base: 6, sm: 3 }}>
-                        <StatCard c={c} color="brandRed" value={String(stats.totalGames)} label="Всего игр" icon={<IconDeviceGamepad2 size={16} />} />
+                        <StatCard
+                            c={c} color="brandRed"
+                            value={String(stats.totalGames)}
+                            label="Всего игр"
+                            icon={<IconDeviceGamepad2 size={16} />}
+                        />
                     </Grid.Col>
                     <Grid.Col span={{ base: 6, sm: 3 }}>
-                        <StatCard c={c}
-                            color="green"
-                            value={`${pct((stats.winsDon + stats.winsSheriff + stats.winsMafia + stats.winsCivilian), stats.totalGames)}%`}
-                            subValue={`${(stats.winsDon + stats.winsSheriff + stats.winsMafia + stats.winsCivilian)} побед`}
+                        <StatCard
+                            c={c} color="green"
+                            value={`${pct(
+                                stats.winsDon + stats.winsSheriff
+                                + stats.winsMafia + stats.winsCivilian,
+                                stats.totalGames
+                            )}%`}
+                            subValue={`${stats.winsDon + stats.winsSheriff
+                                + stats.winsMafia + stats.winsCivilian} побед`}
                             label="Общий Win Rate"
                         />
                     </Grid.Col>
                     <Grid.Col span={{ base: 6, sm: 3 }}>
-                        <StatCard c={c}
-                            color="yellow"
+                        <StatCard
+                            c={c} color="yellow"
                             value={String(stats.bestMovesTotal ?? 0)}
-                            subValue={stats.bestMovesTotal > 0 ? `Идеальных: ${stats.bestMovesPerfect ?? 0}` : '—'}
+                            subValue={stats.bestMovesTotal > 0
+                                ? `Идеальных: ${stats.bestMovesPerfect ?? 0}` : '—'}
                             label="Лучших ходов"
                             icon={<IconTrophy size={16} />}
+                        />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 6, sm: 3 }}>
+                        <StatCard
+                            c={c} color="red"
+                            value={String(stats.firstKilledCount ?? 0)}
+                            label="Первых убитых"
                         />
                     </Grid.Col>
                 </Grid>
@@ -190,12 +261,21 @@ function StatsSection({ stats, c }) {
                 <Title order={4} mb="md">Win Rate по ролям</Title>
                 <Grid>
                     {Object.entries(ROLE_CONFIG).map(([role, cfg]) => {
-                        const games   = stats[`games${role.charAt(0).toUpperCase() + role.slice(1)}`] ?? 0;
-                        const wins    = stats[`wins${role.charAt(0).toUpperCase() + role.slice(1)}`]  ?? 0;
+                        const cap    = role.charAt(0).toUpperCase() + role.slice(1);
+                        const games  = stats[`games${cap}`] ?? 0;
+                        const wins   = stats[`wins${cap}`]  ?? 0;
                         const winRate = pct(wins, games);
                         return (
                             <Grid.Col key={role} span={{ base: 6, sm: 3 }}>
-                                <WinRateCard c={c} color={cfg.color} winRate={winRate} wins={wins} games={games} label={cfg.label} isMain={role === 'civilian'} />
+                                <WinRateCard
+                                    c={c}
+                                    color={cfg.color}
+                                    winRate={winRate}
+                                    wins={wins}
+                                    games={games}
+                                    label={cfg.label}
+                                    isMain={role === 'civilian'}
+                                />
                             </Grid.Col>
                         );
                     })}
@@ -205,13 +285,17 @@ function StatsSection({ stats, c }) {
     );
 }
 
+// ── Карточка статистики ───────────────────────────────────────────────────────
+
 function StatCard({ c, color, value, subValue, label }) {
     return (
-        <Paper p="md" radius="md" withBorder h="100%"
+        <Paper
+            p="md" radius="md" withBorder h="100%"
             style={{
                 borderLeft: `4px solid var(--mantine-color-${color}-filled)`,
                 backgroundColor: c.surface3,
-            }}>
+            }}
+        >
             <Text size="xl" fw={700} c={`${color}.3`}>{value}</Text>
             {subValue && <Text size="xs" c="dimmed">{subValue}</Text>}
             <Text size="xs" c="dimmed" mt={4} fw={500}>{label}</Text>
@@ -219,16 +303,30 @@ function StatCard({ c, color, value, subValue, label }) {
     );
 }
 
+// ── Карточка win rate ─────────────────────────────────────────────────────────
+
 function WinRateCard({ c, color, winRate, wins, games, label, isMain }) {
     return (
-        <Paper p="md" radius="md" withBorder h="100%"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, backgroundColor: c.surface3 }}>
+        <Paper
+            p="md" radius="md" withBorder h="100%"
+            style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 8,
+                backgroundColor: c.surface3,
+            }}
+        >
             <Tooltip label={`${wins} побед из ${games} игр`} withArrow>
                 <div>
                     <RingProgress
-                        size={isMain ? 90 : 72} thickness={isMain ? 8 : 6}
-                        roundCaps sections={[{ value: winRate, color }]}
-                        label={<Text ta="center" fw={700} size={isMain ? 'md' : 'sm'}>{winRate}%</Text>}
+                        size={isMain ? 90 : 72}
+                        thickness={isMain ? 8 : 6}
+                        roundCaps
+                        sections={[{ value: winRate, color }]}
+                        label={
+                            <Text ta="center" fw={700} size={isMain ? 'md' : 'sm'}>
+                                {winRate}%
+                            </Text>
+                        }
                     />
                 </div>
             </Tooltip>

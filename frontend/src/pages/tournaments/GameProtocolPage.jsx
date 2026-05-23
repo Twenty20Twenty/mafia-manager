@@ -15,6 +15,8 @@ import NewGameForm     from './components/games/NewGameForm';
 import SlotRow         from './components/games/SlotRow';
 import BestMoveSection from './components/games/BestMoveSection';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import api from "../../api/axios.js";
+import {useEffect, useState} from "react";
 
 // ─── Мобильная карточка слота ────────────────────────────────────────
 function MobileSlotCard({ slot, index, isRatingGame, participantsOptions, onUpdate, c }) {
@@ -101,6 +103,28 @@ export default function GameProtocolPage({ isNewRatingGame = false }) {
     const isMobile = useMediaQuery('(max-width: 768px)');
     const c = useThemeColors();
 
+    const [loading, setLoading]         = useState(true);
+    const [tournament, setTournament]   = useState(null);
+
+    useEffect(() => {
+        if (!tournamentId) return;
+        const fetchData = async () =>{
+            try {
+                const [tourRes] = await Promise.all([
+                    api.get(`/tournaments/${tournamentId}`),
+                ]);
+                setTournament(tourRes.data);
+                console.log('tournament', tourRes);
+            } catch (err) {
+                console.error('Ошибка загрузки турнира', err);
+                setError('Не удалось загрузить данные турнира');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [tournamentId]);
+
     const {
         pageState, errorMsg,
         game, slots, winner, setWinner,
@@ -114,6 +138,13 @@ export default function GameProtocolPage({ isNewRatingGame = false }) {
         updateSlot,
         handleSave,
     } = useGameProtocol({ tournamentId, gameId, isNewRatingGame });
+
+    if (loading) return <Center p="xl" mt="xl"><Loader color="brandRed" size="xl" /></Center>;
+
+    const tournamentIsOver = tournament ? tournament.status === 'completed' : true ;
+
+    console.log(tournament);
+    console.log(tournament?.status);
 
     if (pageState === 'form') {
         return <NewGameForm tournamentId={tournamentId} onGameCreated={handleGameCreated} />;
@@ -147,9 +178,13 @@ export default function GameProtocolPage({ isNewRatingGame = false }) {
                     <Title order={3}>{pageTitle}</Title>
                     <Group>
                         <Switch label="Черновик" checked={isDraft} onChange={e => setIsDraft(e.currentTarget.checked)} size="md" color="orange" />
-                        <Button leftSection={<IconDeviceFloppy size={18} />} color="green" onClick={handleSave} loading={saving}>
-                            Сохранить
-                        </Button>
+                        {tournamentIsOver ?
+                                <>
+                                </>
+                                :
+                            <Button leftSection={<IconDeviceFloppy size={18} />} color="green" onClick={handleSave} loading={saving}>
+                                Сохранить
+                            </Button>}
                     </Group>
                 </Group>
 

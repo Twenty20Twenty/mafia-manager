@@ -4,6 +4,7 @@ import com.mafia.manager.dto.*;
 import com.mafia.manager.service.EmailVerificationService;
 import com.mafia.manager.service.PlayerStatsService;
 import com.mafia.manager.service.UserService;
+import com.mafia.manager.service.UserTournamentsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,6 +29,7 @@ public class UserController {
     private final UserService               userService;
     private final PlayerStatsService        playerStatsService;
     private final EmailVerificationService  emailVerificationService;
+    private final UserTournamentsService    userTournamentsService;
 
     // ── ПРОФИЛЬ ───────────────────────────────────────────────────────────────
 
@@ -54,6 +56,16 @@ public class UserController {
     @GetMapping("/{id}/stats")
     public ResponseEntity<List<PlayerStatsDto>> getUserStats(@PathVariable Long id) {
         return ResponseEntity.ok(playerStatsService.getStats(id));
+    }
+
+    @Operation(
+            summary = "Турниры игрока",
+            description = "Возвращает все турниры, в которых игрок является одобренным участником. " +
+                          "Для завершённых турниров с открытыми результатами — место в личном/командном зачёте."
+    )
+    @GetMapping("/{id}/tournaments")
+    public ResponseEntity<List<PlayerTournamentDto>> getUserTournaments(@PathVariable Long id) {
+        return ResponseEntity.ok(userTournamentsService.getTournamentsForUser(id));
     }
 
     @Operation(summary = "Обновить профиль пользователя",
@@ -84,11 +96,7 @@ public class UserController {
     @Operation(
             summary = "Запросить смену email",
             description = "Отправляет 6-значный код на НОВЫЙ email. Старый email остаётся до подтверждения.",
-            security = @SecurityRequirement(name = "bearerAuth"),
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Код отправлен"),
-                    @ApiResponse(responseCode = "400", description = "Email уже занят")
-            }
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/{id}/request-email-change")
     public ResponseEntity<Void> requestEmailChange(
@@ -101,12 +109,7 @@ public class UserController {
 
     @Operation(
             summary = "Подтвердить смену email по коду",
-            description = "Принимает 6-значный код из письма. Обновляет users.email атомарно.",
-            security = @SecurityRequirement(name = "bearerAuth"),
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Email обновлён"),
-                    @ApiResponse(responseCode = "400", description = "Неверный или истёкший код")
-            }
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/{id}/confirm-email-change")
     public ResponseEntity<Void> confirmEmailChange(

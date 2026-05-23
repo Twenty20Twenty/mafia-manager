@@ -2,10 +2,9 @@
 import { Paper, Group, ThemeIcon, Text, Badge, Avatar, Progress } from '@mantine/core';
 import { IconCalendar, IconUsers, IconTrophy, IconChevronRight } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
-import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import { TOURNAMENT_TYPES, TOURNAMENT_STATUSES } from '../constants/tournamentConstants';
 import { useThemeColors } from '../../../hooks/useThemeColors';
+import { formatTournamentDates } from '../utils/tournamentDateUtils';
 
 export default function TournamentCard({ tour }) {
     const c = useThemeColors();
@@ -17,9 +16,7 @@ export default function TournamentCard({ tour }) {
     const maxCount     = tour.settings?.maxParticipants || 100;
     const progress     = Math.min((currentCount / maxCount) * 100, 100);
 
-    const dateRange = tour.startDate && tour.endDate
-        ? `${dayjs(tour.startDate).locale('ru').format('D MMM')} — ${dayjs(tour.endDate).locale('ru').format('D MMM YYYY')}`
-        : 'Даты не указаны';
+    const dateLabel = formatTournamentDates(tour.startDate, tour.endDate);
 
     return (
         <Paper
@@ -36,22 +33,32 @@ export default function TournamentCard({ tour }) {
             onMouseLeave={e => e.currentTarget.style.backgroundColor = c.surface2}
         >
             <Group justify="space-between" wrap="nowrap" align="flex-start">
-                <Group wrap="nowrap" gap={{ base: 'sm', sm: 'xl' }} align="flex-start" style={{ flex: 1, minWidth: 0 }}>
-                    <ThemeIcon size={48} radius="md" color={typeInfo.color} variant="light" style={{ flexShrink: 0 }}>
+                <Group wrap="nowrap" gap={{ base: 'sm', sm: 'xl' }} align="flex-start"
+                       style={{ flex: 1, minWidth: 0 }}>
+                    <ThemeIcon size={48} radius="md" color={typeInfo.color} variant="light"
+                               style={{ flexShrink: 0 }}>
                         {tour.type === 'season' ? <IconTrophy size={28} /> : <IconUsers size={28} />}
                     </ThemeIcon>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <Group align="center" gap="sm" mb={4} wrap="wrap">
-                            <Text fw={700} size="lg" style={{ wordBreak: 'break-word' }}>{tour.title}</Text>
-                            <Badge color={typeInfo.color} variant="outline" size="sm">{typeInfo.label}</Badge>
-                            {statusInfo && <Badge color={statusInfo.color} variant="dot" size="sm">{statusInfo.label}</Badge>}
+                            <Text fw={700} size="lg" style={{ wordBreak: 'break-word' }}>
+                                {tour.title}
+                            </Text>
+                            <Badge color={typeInfo.color} variant="outline" size="sm">
+                                {typeInfo.label}
+                            </Badge>
+                            {statusInfo && (
+                                <Badge color={statusInfo.color} variant="dot" size="sm">
+                                    {statusInfo.label}
+                                </Badge>
+                            )}
                         </Group>
 
                         <Group gap="lg" wrap="wrap">
                             <Group gap={5} c="dimmed">
                                 <IconCalendar size={15} />
-                                <Text size="sm">{dateRange}</Text>
+                                <Text size="sm">{dateLabel}</Text>
                             </Group>
                             {tour.clubName && (
                                 <Group gap={5}>

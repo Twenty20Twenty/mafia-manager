@@ -1,7 +1,7 @@
 // src/pages/tournaments/CreateTournamentPage.jsx
 import {
     Container, Title, TextInput, Button, Paper, Group,
-    Select, NumberInput, Alert, Center, Loader
+    Select, NumberInput, Alert, Center, Loader, Switch, Text
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconArrowLeft, IconCalendar, IconShieldLock } from '@tabler/icons-react';
@@ -21,14 +21,21 @@ export default function CreateTournamentPage() {
     const [fullUser,      setFullUser]      = useState(null);
     const [isUserLoading, setIsUserLoading] = useState(true);
 
+    // singleDay=true → datePickerInput в режиме одного дня
+    const [singleDay, setSingleDay] = useState(false);
+
     const [formData, setFormData] = useState({
         title:           '',
         type:            'individual',
         maxParticipants: 10,
-        dates:           [null, null],
-        headJudgeId:     null,
-        cityId:          null,
+        // range mode: [Date|null, Date|null], single mode: Date|null
+        dates:     [null, null],
+        singleDate: null,
+        headJudgeId: null,
+        cityId:      null,
     });
+
+    const set = (field, val) => setFormData(prev => ({ ...prev, [field]: val }));
 
     useEffect(() => {
         if (!user) { setIsUserLoading(false); return; }
@@ -72,6 +79,19 @@ export default function CreateTournamentPage() {
         );
     }
 
+    // Резолвим даты в зависимости от режима
+    const resolveStartDate = () => {
+        if (singleDay) return formData.singleDate
+            ? dayjs(formData.singleDate).format('YYYY-MM-DD') : null;
+        return formData.dates[0] ? dayjs(formData.dates[0]).format('YYYY-MM-DD') : null;
+    };
+
+    const resolveEndDate = () => {
+        if (singleDay) return formData.singleDate
+            ? dayjs(formData.singleDate).format('YYYY-MM-DD') : null;
+        return formData.dates[1] ? dayjs(formData.dates[1]).format('YYYY-MM-DD') : null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -80,8 +100,8 @@ export default function CreateTournamentPage() {
             title:       formData.title,
             description: '',
             type:        formData.type,
-            startDate:   formData.dates[0] ? dayjs(formData.dates[0]).format('YYYY-MM-DD') : null,
-            endDate:     formData.dates[1] ? dayjs(formData.dates[1]).format('YYYY-MM-DD') : null,
+            startDate:   resolveStartDate(),
+            endDate:     resolveEndDate(),
             cityId:      formData.cityId ? Number(formData.cityId) : null,
             settings: {
                 maxParticipants:    formData.maxParticipants,
@@ -96,7 +116,6 @@ export default function CreateTournamentPage() {
 
         try {
             const res = await api.post('/tournaments', payload);
-            alert('Турнир успешно создан!');
             navigate(`/tournaments/${res.data.id}`);
         } catch (error) {
             alert(error.response?.data?.message || 'Ошибка создания турнира.');
@@ -104,8 +123,6 @@ export default function CreateTournamentPage() {
             setLoading(false);
         }
     };
-
-    const set = (field, val) => setFormData(prev => ({ ...prev, [field]: val }));
 
     return (
         <Container size="sm" py="xl">
@@ -161,15 +178,40 @@ export default function CreateTournamentPage() {
                         mb="md"
                     />
 
-                    <DatePickerInput
-                        type="range"
-                        label="Даты проведения"
-                        placeholder="Выберите период"
-                        leftSection={<IconCalendar size={16} />}
-                        value={formData.dates}
-                        onChange={val => set('dates', val)}
-                        mb="md"
-                    />
+                    {/* Переключатель: один день / диапазон */}
+                    <Group mb="xs" justify="space-between">
+                        <Text size="sm" fw={500}>Даты проведения</Text>
+                        <Switch
+                            label="Один день"
+                            size="sm"
+                            checked={singleDay}
+                            onChange={e => {
+                                setSingleDay(e.currentTarget.checked);
+                                // Сбрасываем значения при переключении
+                                set('dates',      [null, null]);
+                                set('singleDate', null);
+                            }}
+                        />
+                    </Group>
+
+                    {singleDay ? (
+                        <DatePickerInput
+                            placeholder="Выберите дату"
+                            leftSection={<IconCalendar size={16} />}
+                            value={formData.singleDate}
+                            onChange={val => set('singleDate', val)}
+                            mb="md"
+                        />
+                    ) : (
+                        <DatePickerInput
+                            type="range"
+                            placeholder="Выберите период"
+                            leftSection={<IconCalendar size={16} />}
+                            value={formData.dates}
+                            onChange={val => set('dates', val)}
+                            mb="md"
+                        />
+                    )}
 
                     <Select
                         label="Главный судья (необязательно)"

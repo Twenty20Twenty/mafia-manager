@@ -1,6 +1,7 @@
 package com.mafia.manager.service;
 
 import com.mafia.manager.dto.ClubDto;
+import com.mafia.manager.dto.ClubRequestStatusDto;
 import com.mafia.manager.dto.CreateClubRequest;
 import com.mafia.manager.dto.UserDto;
 import com.mafia.manager.entity.Club;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -256,6 +258,54 @@ public class ClubService {
         req.setUser(currentUser);
         req.setClub(club);
         clubRequestRepository.save(req);
+    }
+
+    /**
+     * Возвращает статус заявки текущего пользователя относительно конкретного клуба.
+     *
+     * <p>Возможные варианты:</p>
+     * <ul>
+     *   <li>Заявка в этот клуб — hasPendingRequestForThisClub=true</li>
+     *   <li>Заявка в другой клуб — hasPendingRequestForOtherClub=true</li>
+     *   <li>Заявок нет — оба false, pendingClubId=null</li>
+     * </ul>
+     *
+     * @param clubId ID клуба, страницу которого смотрит пользователь
+     */
+    public ClubRequestStatusDto getMyRequestStatus(Long clubId) {
+        User currentUser = getCurrentUser();
+
+        // Ищем любую активную заявку пользователя
+        List<ClubRequest> allRequests = clubRequestRepository.findByUserId(currentUser.getId());
+
+        if (allRequests.isEmpty()) {
+            return ClubRequestStatusDto.builder()
+                    .pendingClubId(null)
+                    .hasPendingRequestForThisClub(false)
+                    .hasPendingRequestForOtherClub(false)
+                    .build();
+        }
+
+        // Есть ли заявка именно в этот клуб
+        Optional<ClubRequest> requestForThisClub = allRequests.stream()
+                .filter(r -> r.getClub().getId().equals(clubId))
+                .findFirst();
+
+        if (requestForThisClub.isPresent()) {
+            return ClubRequestStatusDto.builder()
+                    .pendingClubId(clubId)
+                    .hasPendingRequestForThisClub(true)
+                    .hasPendingRequestForOtherClub(false)
+                    .build();
+        }
+
+        // Заявка в другой клуб
+        ClubRequest otherRequest = allRequests.get(0);
+        return ClubRequestStatusDto.builder()
+                .pendingClubId(otherRequest.getClub().getId())
+                .hasPendingRequestForThisClub(false)
+                .hasPendingRequestForOtherClub(true)
+                .build();
     }
 
     /**

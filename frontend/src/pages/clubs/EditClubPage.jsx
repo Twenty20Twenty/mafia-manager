@@ -23,7 +23,7 @@ export default function EditClubPage() {
 
     useEffect(() => {
         api.get(`/clubs/${id}`).then(res => {
-            console.log(res);
+
             setFormData({
                 name:        res.data.name        || '',
                 city:        res.data.city        || '',
@@ -46,7 +46,7 @@ export default function EditClubPage() {
             if (avatar.hasNewFile) {
                 await uploadClubAvatar(Number(id), avatar.file);
             }
-            console.log(formData);
+
             // 2. Обновляем остальные данные клуба
             await api.put(`/clubs/${id}`, formData);
 

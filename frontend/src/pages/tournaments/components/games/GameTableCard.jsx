@@ -1,6 +1,6 @@
 // src/pages/tournaments/components/games/GameTableCard.jsx
 import { useState }          from 'react';
-import { Paper, Group, Badge, Text, ActionIcon, Table, Tooltip, Stack } from '@mantine/core';
+import {Paper, Group, Badge, Text, ActionIcon, Table, Tooltip, Stack, Popover} from '@mantine/core';
 import { IconEdit, IconRefresh, IconTrash }  from '@tabler/icons-react';
 import { Link }              from 'react-router-dom';
 import { resolveCanEdit }    from '../../utils/tournamentUtils';
@@ -9,6 +9,7 @@ import DeleteRatingGameModal from './DeleteRatingGameModal.jsx';
 import { swapSlot }          from '../../../../api/tournaments_additions';
 import { gamesApi }          from '../../../../api/games.js';
 import { useThemeColors }    from '../../../../hooks/useThemeColors';
+import {useMediaQuery} from "@mantine/hooks";
 
 const ROLE_CONFIG = {
     civilian: { color: 'red',    label: 'Мир'  },
@@ -92,10 +93,15 @@ export default function GameTableCard({ game, tournament, user, participantOptio
     const [swapLoading, setSwapLoading] = useState(false);
     const [deleteOpen,  setDeleteOpen]  = useState(false);
     const [delLoading,  setDelLoading]  = useState(false);
+    const isOrganizer = !!user && (user.isAdmin || user.id === tournament.organizerId);
+
+    const isMobile = useMediaQuery('(max-width: 768px)', false, { getInitialValueInEffect: true });
 
     const isDraft          = game.status === 'draft';
     const isCompleted      = game.status === 'completed';
     const areResultsHidden = tournament?.settings?.areResultsHidden || !isCompleted || isDraft;
+    const shouldHide = areResultsHidden && !isOrganizer;
+
     const canEdit          = resolveCanEdit(user, tournament, game);
     const isDraw           = game.winner === 'draw';
     const isFinal          = game.stage === 'final_round';
@@ -129,13 +135,13 @@ export default function GameTableCard({ game, tournament, user, participantOptio
 
     const rows = (game.slots || []).map(slot => {
         const roleConfig    = ROLE_CONFIG[slot.role?.toLowerCase()] || null;
-        const roleTextColor = !areResultsHidden && roleConfig
+        const roleTextColor = !shouldHide && roleConfig
             ? `var(--mantine-color-${roleConfig.color}-light-color)` : 'inherit';
 
         return (
             <Table.Tr
                 key={slot.slotNumber}
-                bg={slot.isFirstKilled && !areResultsHidden ? c.slotFkBg : undefined}
+                bg={slot.isFirstKilled && !shouldHide ? c.slotFkBg : undefined}
             >
                 <Table.Td w={40} style={{ minWidth: 40, textAlign: 'center' }}>
                     <Text size="sm" c="dimmed">{slot.slotNumber}</Text>
@@ -153,7 +159,7 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                 </Table.Td>
 
                 <Table.Td w={60} style={{ minWidth: 60, textAlign: 'center', color: roleTextColor, fontWeight: 600 }}>
-                    {!areResultsHidden && roleConfig
+                    {!shouldHide && roleConfig
                         ? <Text size="sm">{roleConfig.label}</Text>
                         : <Text c="dimmed" size="xs">-</Text>
                     }
@@ -163,8 +169,8 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                     w={60}
                     style={{
                         minWidth: 60, textAlign: 'center',
-                        backgroundColor: !areResultsHidden && isCompleted
-                            ? slot.extraNeg > 0
+                        backgroundColor: !shouldHide && isCompleted
+                            ? slot.extraNeg > 0 || slot.penalty > 0
                                 ? 'rgba(255, 80, 80, 0.18)'
                                 : slot.extraPos > 0
                                     ? 'rgba(130, 230, 50, 0.18)'
@@ -172,15 +178,28 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                             : undefined,
                     }}
                 >
-                    {!areResultsHidden && isCompleted ? (
-                        <Tooltip
-                            label={<SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff} />}
-                            color="gray" withArrow position="left"
-                        >
-                            <Text size="sm" style={{ cursor: 'help' }}>
-                                {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
-                            </Text>
-                        </Tooltip>
+                    {!shouldHide && isCompleted ? (
+                        isMobile ?
+                                (<Popover trigger="click" withArrow position="left">
+                                    <Popover.Target>
+                                        <Text size="sm" style={{ cursor: 'help' }}>
+                                            {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
+                                        </Text>
+                                    </Popover.Target>
+                                    <Popover.Dropdown>
+                                        <SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff} />
+                                    </Popover.Dropdown>
+                                </Popover>)
+                                :
+                                (<Tooltip
+                                    label={<SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal}
+                                                              coeff={coeff}/>}
+                                    color="gray" withArrow position="left"
+                                >
+                                    <Text size="sm" style={{cursor: 'help'}}>
+                                        {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
+                                    </Text>
+                                </Tooltip>)
                     ) : (
                         <Text c="dimmed" size="xs">-</Text>
                     )}
@@ -256,7 +275,7 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                     </Table>
                 </div>
 
-                <WinnerBanner game={game} isCompleted={isCompleted} areResultsHidden={areResultsHidden} c={c} />
+                <WinnerBanner game={game} isCompleted={isCompleted} areResultsHidden={shouldHide} c={c} />
             </Paper>
 
             <SwapSlotModal
