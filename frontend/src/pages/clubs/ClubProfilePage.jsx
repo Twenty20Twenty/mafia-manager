@@ -13,7 +13,7 @@ import {
 import dayjs from 'dayjs';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { TOURNAMENT_STATUSES, TOURNAMENT_TYPES } from '../../mocks/tournamentData';
+import { TOURNAMENT_STATUSES, TOURNAMENT_TYPES } from '../tournaments/constants/tournamentConstants';
 import { notifications } from '@mantine/notifications';
 import { useThemeColors } from '../../hooks/useThemeColors';
 

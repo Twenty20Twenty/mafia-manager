@@ -154,65 +154,62 @@ export default function TournamentHeader({
                     )}
 
 
-                    {/* ACTIONS */}
-                    <Group mt="xl" wrap="wrap" gap="sm">
 
-                        {tournament.settings?.socialLink && (
-                            <Button
-                                component="a"
-                                href={
-                                    tournament.settings.socialLink.startsWith('http')
-                                        ? tournament.settings.socialLink
-                                        : `https://${tournament.settings.socialLink}`
-                                }
-                                target="_blank"
-                                leftSection={<IconBrandVk size={20} />}
-                                variant="default"
-                            >
-                                Группа турнира
-                            </Button>
-                        )}
-
-                        {isRegistrationOpen &&
-                            !isRating &&
-                            user &&
-                            !isAlreadyParticipant &&
-                            !isRequestSent && (
-                                <Button color="green" onClick={onRegister}>
-                                    Подать заявку
-                                </Button>
-                            )}
-
-                        {isRequestSent && (
-                            <Button disabled variant="light" color="yellow">
-                                Заявка на рассмотрении
-                            </Button>
-                        )}
-
-                        {isAlreadyParticipant && (
-                            <Button disabled variant="light" color="blue">
-                                Вы участник
-                            </Button>
-                        )}
-
-                        {canManage && (
-                            <Button
-                                component={Link}
-                                to={`/tournaments/${tournament.id}/manage`}
-                                leftSection={<IconSettings size={18} />}
-                                color="orange"
-                                variant="outline"
-                            >
-                                Настроить турнир
-                            </Button>
-                        )}
-                    </Group>
                 </Grid.Col>
 
                 {/* RIGHT SIDE */}
                 <Grid.Col span={{ base: 12, md: 4 }}>
 
                     <Stack gap="md">
+
+                        {/* CLUB */}
+                        {tournament.organizerId && (
+                            <Paper
+                                withBorder
+                                p="md"
+                                radius="md"
+                                style={{ backgroundColor: c.surface3 }}
+                            >
+                                <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    tt="uppercase"
+                                    fw={700}
+                                    mb="xs"
+                                >
+                                    Клуб
+                                </Text>
+
+                                <Group
+                                    component={Link}
+                                    to={`/clubs/${tournament.clubId}`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: 'inherit',
+                                    }}
+                                    wrap="nowrap"
+                                >
+                                    <Avatar
+                                        src={tournament.clubLogo}
+                                        size="lg"
+                                        radius="50%"
+                                        color="brandRed"
+                                        //w={30}
+                                        //h={30}
+                                    />
+
+                                    <div>
+                                        <Text fw={700} size="lg">
+                                            {tournament.clubName}
+                                        </Text>
+
+                                        <Text size="xs" c="dimmed">
+                                            Перейти в профиль
+                                        </Text>
+                                    </div>
+                                </Group>
+                            </Paper>
+                        )}
 
                         {/* ORGANIZER */}
                         {tournament.organizerId && (
@@ -310,6 +307,60 @@ export default function TournamentHeader({
                     </Stack>
                 </Grid.Col>
             </Grid>
+
+            {/* ACTIONS */}
+            <Group mt="xl" wrap="wrap" gap="sm">
+
+                {tournament.settings?.socialLink && (
+                    <Button
+                        component="a"
+                        href={
+                            tournament.settings.socialLink.startsWith('http')
+                                ? tournament.settings.socialLink
+                                : `https://${tournament.settings.socialLink}`
+                        }
+                        target="_blank"
+                        leftSection={<IconBrandVk size={20} />}
+                        variant="default"
+                    >
+                        Группа турнира
+                    </Button>
+                )}
+
+                {isRegistrationOpen &&
+                    !isRating &&
+                    user &&
+                    !isAlreadyParticipant &&
+                    !isRequestSent && (
+                        <Button color="green" onClick={onRegister}>
+                            Подать заявку
+                        </Button>
+                    )}
+
+                {isRequestSent && (
+                    <Button disabled variant="light" color="yellow">
+                        Заявка на рассмотрении
+                    </Button>
+                )}
+
+                {isAlreadyParticipant && (
+                    <Button disabled variant="light" color="blue">
+                        Вы участник
+                    </Button>
+                )}
+
+                {canManage && (
+                    <Button
+                        component={Link}
+                        to={`/tournaments/${tournament.id}/manage`}
+                        leftSection={<IconSettings size={18} />}
+                        color="orange"
+                        variant="outline"
+                    >
+                        Настроить турнир
+                    </Button>
+                )}
+            </Group>
         </Paper>
     );
 }

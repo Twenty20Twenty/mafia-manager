@@ -148,7 +148,15 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
                        ELSE SUM(gs.computed_score) / COUNT(gs.id) END
               END DESC NULLS LAST,
               CASE WHEN :sortBy != 'avg' THEN SUM(gs.computed_score) END DESC NULLS LAST,
-              totalWins DESC;
+              (SUM(gs.extra_points_positive) - SUM(gs.extra_points_negative) + COALESCE(SUM(bm.points), 0)) DESC NULLS LAST,
+              COUNT(CASE
+                  WHEN ((gs.role IN ('civilian', 'sheriff') AND g.winner = 'red')
+                     OR (gs.role IN ('mafia', 'don')        AND g.winner = 'black'))
+                  THEN 1
+              END) DESC,
+              (COUNT(CASE WHEN gs.role = 'don' AND g.winner = 'black' THEN 1 END)
+               + COUNT(CASE WHEN gs.role = 'sheriff' AND g.winner = 'red' THEN 1 END)) DESC,
+              COUNT(CASE WHEN gs.is_first_killed = TRUE THEN 1 END) DESC;
             """, nativeQuery = true)
     List<LeaderboardEntryDto> getLeaderboard(
             @Param("tournamentId") Long tournamentId,
@@ -189,7 +197,17 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
                 WHERE tt.tournament_id = :tournamentId
                   AND tp.status = 'approved'
                 GROUP BY tt.id, tt.name
-                ORDER BY totalScore DESC
+                ORDER BY
+                    totalScore DESC,
+                    (SUM(gs.extra_points_positive) - SUM(gs.extra_points_negative) + COALESCE(SUM(bm.points), 0)) DESC,
+                    COUNT(CASE
+                        WHEN ((gs.role IN ('civilian','sheriff') AND g.winner = 'red')
+                           OR (gs.role IN ('mafia','don')        AND g.winner = 'black'))
+                        THEN 1
+                    END) DESC,
+                    (COUNT(CASE WHEN gs.role = 'don'     AND g.winner = 'black' THEN 1 END)
+                     + COUNT(CASE WHEN gs.role = 'sheriff' AND g.winner = 'red' THEN 1 END)) DESC,
+                    COUNT(CASE WHEN gs.is_first_killed = TRUE THEN 1 END) DESC
             """, nativeQuery = true)
     List<TeamLeaderboardEntryDto> getTeamLeaderboard(@Param("tournamentId") Long tournamentId);
 
@@ -283,6 +301,28 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
         GROUP BY tp.tournament_id, tp.user_id, u.nickname, u.avatar_url,
                  t.rating_threshold, tg.total_games
         HAVING COUNT(gs.id) >= FLOOR( t.rating_threshold * tg.total_games / 100.0)
+        ORDER BY
+            CASE WHEN :calcMode = 'avg'
+                THEN COALESCE(SUM(
+                    gs.extra_points_positive
+                    - gs.extra_points_negative
+                    + COALESCE(bm.points, 0)
+                ), 0) / NULLIF(COUNT(gs.id), 0)
+                ELSE COALESCE(SUM(
+                    gs.extra_points_positive
+                    - gs.extra_points_negative
+                    + COALESCE(bm.points, 0)
+                ), 0)
+            END DESC NULLS LAST,
+            (SUM(gs.extra_points_positive) - SUM(gs.extra_points_negative) + COALESCE(SUM(bm.points), 0)) DESC NULLS LAST,
+            COUNT(CASE
+                WHEN ((gs.role IN ('civilian', 'sheriff') AND g.winner = 'red')
+                   OR (gs.role IN ('mafia', 'don')        AND g.winner = 'black'))
+                THEN 1
+            END) DESC,
+            (COUNT(CASE WHEN gs.role = 'don'     AND g.winner = 'black' THEN 1 END)
+             + COUNT(CASE WHEN gs.role = 'sheriff' AND g.winner = 'red'  THEN 1 END)) DESC,
+            COUNT(CASE WHEN gs.is_first_killed = TRUE THEN 1 END) DESC
     """, nativeQuery = true)
     List<NominationDto> getNominations(
             @Param("tournamentId") Long tournamentId,

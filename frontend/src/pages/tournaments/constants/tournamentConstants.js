@@ -7,7 +7,7 @@ export const TOURNAMENT_TYPES = {
 };
 
 export const TOURNAMENT_STATUSES = {
-    registration: { label: 'Регистрация открыта', color: 'green'  },
+    registration: { label: 'Регистрация', color: 'green'  },
     active:       { label: 'Турнир идет',         color: 'yellow' },
     completed:    { label: 'Завершен',             color: 'gray'   },
     archived:     { label: 'Архив',                color: 'dark'   },

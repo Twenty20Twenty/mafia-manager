@@ -30,4 +30,5 @@ public class TournamentDto {
     private String headJudgeName;
     private String organizerAvatar;
     private String headJudgeAvatar;
+    private String clubLogo;
 }

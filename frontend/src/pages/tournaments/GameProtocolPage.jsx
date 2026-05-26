@@ -75,21 +75,24 @@ function MobileSlotCard({ slot, index, isRatingGame, participantsOptions, onUpda
                     size="xs" label="+Доп"
                     value={slot.extraPos}
                     onChange={val => onUpdate(index, 'extraPos', val)}
-                    min={0} step={0.1} decimalScale={1}
+                    /*min={0} step={0.1} decimalScale={1}*/
+                    hideControls
                     styles={{ input: { color: 'var(--mantine-color-green-4)', textAlign: 'center' } }}
                 />
                 <NumberInput
                     size="xs" label="-Доп"
                     value={slot.extraNeg}
                     onChange={val => onUpdate(index, 'extraNeg', val)}
-                    min={0} step={0.1} decimalScale={1}
+                    //min={0} step={0.1} decimalScale={1}
+                    hideControls
                     styles={{ input: { color: 'var(--mantine-color-red-4)', textAlign: 'center' } }}
                 />
                 <NumberInput
                     size="xs" label="Штраф"
                     value={slot.penalty}
                     onChange={val => onUpdate(index, 'penalty', val)}
-                    min={0} step={0.1} decimalScale={1}
+                    //min={0} step={0.1} decimalScale={1}
+                    hideControls
                     styles={{ input: { color: 'var(--mantine-color-red-4)', textAlign: 'center' } }}
                 />
             </Group>

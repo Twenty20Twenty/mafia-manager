@@ -275,7 +275,7 @@ function StatsSection({ stats, c }) {
                                     wins={wins}
                                     games={games}
                                     label={cfg.label}
-                                    isMain={role === 'civilian'}
+                                    /*isMain={role === 'civilian'}*/
                                 />
                             </Grid.Col>
                         );

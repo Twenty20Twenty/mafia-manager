@@ -1,5 +1,7 @@
 // src/pages/tournaments/components/games/BestMoveSection.jsx
-import { Paper, Text, Grid, Select } from '@mantine/core';
+import { Paper, Text, Grid, Select, NativeSelect } from '@mantine/core';
+import {ROLES_DATA} from "../../constants/tournamentConstants.js";
+import { useMediaQuery } from '@mantine/hooks';
 
 export default function BestMoveSection({ bestMove, setBestMove, slots }) {
     const authorOptions = slots
@@ -15,6 +17,7 @@ export default function BestMoveSection({ bestMove, setBestMove, slots }) {
     const authorValue    = bestMove.authorSlotNumber != null ? String(bestMove.authorSlotNumber) : null;
     const candidateValues = bestMove.candidates.map(c => (c != null ? String(c) : null));
 
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
 
     return (
@@ -37,18 +40,34 @@ export default function BestMoveSection({ bestMove, setBestMove, slots }) {
                 </Grid.Col>
                 {[0, 1, 2].map(i => (
                     <Grid.Col key={i} span={{ base: 12, sm: 2.5 }}>
-                        <Select
-                            label={`Кандидат ${i + 1}`}
-                            data={candidateOptions}
-                            value={candidateValues[i]}
-                            onChange={v => setBestMove(bm => {
-                                const cands = [...bm.candidates];
-                                cands[i] = v != null ? Number(v) : null;
-                                return { ...bm, candidates: cands };
-                            })}
-                            clearable
-                            disabled={!bestMove.authorSlotNumber}
-                        />
+                        {isMobile ? (
+                            <NativeSelect
+                                label={`Кандидат ${i + 1}`}
+                                data={[{ value: '', label: '—' }, ...candidateOptions]}
+                                value={candidateValues[i] ?? ''}
+                                onChange={e => setBestMove(bm => {
+                                    const cands = [...bm.candidates];
+                                    const v = e.currentTarget.value;
+                                    cands[i] = v ? Number(v) : null;
+                                    return { ...bm, candidates: cands };
+                                })}
+                                disabled={!bestMove.authorSlotNumber}
+                            />
+                        ) : (
+                            <Select
+                                label={`Кандидат ${i + 1}`}
+                                data={candidateOptions}
+                                value={candidateValues[i]}
+                                onChange={v => setBestMove(bm => {
+                                    const cands = [...bm.candidates];
+                                    cands[i] = v != null ? Number(v) : null;
+                                    return { ...bm, candidates: cands };
+                                })}
+                                clearable
+                                disabled={!bestMove.authorSlotNumber}
+                                comboboxProps={{ withinPortal: false, onOptionSubmit: () => {}}}
+                            />
+                        )}
                     </Grid.Col>
                 ))}
                 <Grid.Col span={{ base: 12, sm: 1.5 }}>

@@ -36,7 +36,7 @@ export default function TournamentsPage() {
 
     useEffect(() => {
         fetchTournaments(search, typeFilter, statusFilter);
-    }, [typeFilter, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [typeFilter, statusFilter]);
 
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -44,7 +44,7 @@ export default function TournamentsPage() {
             fetchTournaments(search, typeFilter, statusFilter);
         }, DEBOUNCE_MS);
         return () => clearTimeout(debounceRef.current);
-    }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [search]);
 
     return (
         <Container size="xl" py="xl">

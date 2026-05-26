@@ -880,6 +880,7 @@ public class TournamentService {
                 .endDate(t.getEndDate())
                 .clubId(t.getClub() != null ? t.getClub().getId() : null)
                 .clubName(t.getClub() != null ? t.getClub().getName() : null)
+                .clubLogo(t.getClub() != null ? t.getClub().getLogoUrl() : null)
                 .cityId(t.getCity() != null ? t.getCity().getId() : null)
                 .cityName(t.getCity() != null ? t.getCity().getName() : null)
                 .settings(t.getSettings())

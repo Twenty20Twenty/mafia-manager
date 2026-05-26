@@ -66,7 +66,7 @@ function WinnerBanner({ game, isCompleted, areResultsHidden, c }) {
 
         return (
             <div style={{ ...bannerStyle, backgroundColor: bg }}>
-                <Text fw={400} c={c.textPrimary} size="xs" tt="uppercase" style={{ letterSpacing: '0.5px' }}>
+                <Text fw={600} c={c.textPrimary} size="xs" tt="uppercase" style={{ letterSpacing: '0.5px' }}>
                     {text}
                 </Text>
             </div>
@@ -143,11 +143,13 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                 key={slot.slotNumber}
                 bg={slot.isFirstKilled && !shouldHide ? c.slotFkBg : undefined}
             >
+                {/* 1. Номер слота */}
                 <Table.Td w={40} style={{ minWidth: 40, textAlign: 'center' }}>
-                    <Text size="sm" c="dimmed">{slot.slotNumber}</Text>
+                    <Text size="sm" c="dimmed" fw={600}>{slot.slotNumber}</Text>
                 </Table.Td>
 
-                <Table.Td style={{ minWidth: 140 }}>
+                {/* 2. Никнейм игрока */}
+                <Table.Td style={{ minWidth: 90 }}>
                     <Text
                         size="sm" fw={500}
                         component={slot.playerId ? Link : 'span'}
@@ -158,17 +160,14 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                     </Text>
                 </Table.Td>
 
-                <Table.Td w={60} style={{ minWidth: 60, textAlign: 'center', color: roleTextColor, fontWeight: 600 }}>
-                    {!shouldHide && roleConfig
-                        ? <Text size="sm">{roleConfig.label}</Text>
-                        : <Text c="dimmed" size="xs">-</Text>
-                    }
-                </Table.Td>
-
+                {/* 3. Роль (ТЕПЕРЬ ПОДСВЕТКА ЗДЕСЬ) */}
                 <Table.Td
                     w={60}
                     style={{
-                        minWidth: 60, textAlign: 'center',
+                        minWidth: 60,
+                        textAlign: 'center',
+                        color: roleTextColor,
+                        fontWeight: 500,
                         backgroundColor: !shouldHide && isCompleted
                             ? slot.extraNeg > 0 || slot.penalty > 0
                                 ? 'rgba(255, 80, 80, 0.18)'
@@ -178,28 +177,41 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                             : undefined,
                     }}
                 >
+                    {!shouldHide && roleConfig
+                        ? <Text size="sm" fw={500}>{roleConfig.label}</Text>
+                        : <Text c="dimmed" size="xs">-</Text>
+                    }
+                </Table.Td>
+
+                {/* 4. Баллы (УБРАЛИ ПОДСВЕТКУ ОТСЮДА) */}
+                <Table.Td
+                    w={60}
+                    style={{
+                        minWidth: 60,
+                        textAlign: 'center'
+                    }}
+                >
                     {!shouldHide && isCompleted ? (
                         isMobile ?
-                                (<Popover trigger="click" withArrow position="left">
-                                    <Popover.Target>
-                                        <Text size="sm" style={{ cursor: 'help' }}>
-                                            {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
-                                        </Text>
-                                    </Popover.Target>
-                                    <Popover.Dropdown>
-                                        <SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff} />
-                                    </Popover.Dropdown>
-                                </Popover>)
-                                :
-                                (<Tooltip
-                                    label={<SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal}
-                                                              coeff={coeff}/>}
-                                    color="gray" withArrow position="left"
-                                >
-                                    <Text size="sm" style={{cursor: 'help'}}>
+                            (<Popover trigger="click" withArrow position="left">
+                                <Popover.Target>
+                                    <Text size="sm" fw={500} style={{ cursor: 'help' }}>
                                         {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
                                     </Text>
-                                </Tooltip>)
+                                </Popover.Target>
+                                <Popover.Dropdown>
+                                    <SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff} />
+                                </Popover.Dropdown>
+                            </Popover>)
+                            :
+                            (<Tooltip
+                                label={<SlotPointsTooltip slot={slot} game={game} isDraw={isDraw} isFinal={isFinal} coeff={coeff}/>}
+                                color="gray" withArrow position="left"
+                            >
+                                <Text size="sm" fw={500} style={{cursor: 'help'}}>
+                                    {formatPoints(Number(slot.totalScore ?? slot.computedScore ?? 0) * coeff)}
+                                </Text>
+                            </Tooltip>)
                     ) : (
                         <Text c="dimmed" size="xs">-</Text>
                     )}
