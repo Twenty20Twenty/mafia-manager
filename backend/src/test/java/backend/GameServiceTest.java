@@ -1,9 +1,10 @@
-package com.mafia.manager.service;
+package backend;
 
 import com.mafia.manager.dto.*;
 import com.mafia.manager.entity.*;
 import com.mafia.manager.entity.enums.*;
 import com.mafia.manager.repository.*;
+import com.mafia.manager.service.GameService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -33,7 +34,8 @@ class GameServiceTest {
     @Mock UserRepository       userRepository;
     @Mock TournamentRepository tournamentRepository;
 
-    @InjectMocks GameService gameService;
+    @InjectMocks
+    GameService gameService;
 
     // ── Фабрики ───────────────────────────────────────────────────────────────
 

@@ -149,7 +149,7 @@ export default function GameTableCard({ game, tournament, user, participantOptio
                 </Table.Td>
 
                 {/* 2. Никнейм игрока */}
-                <Table.Td style={{ minWidth: 90 }}>
+                <Table.Td style={{ minWidth: 170 }}>
                     <Text
                         size="sm" fw={500}
                         component={slot.playerId ? Link : 'span'}

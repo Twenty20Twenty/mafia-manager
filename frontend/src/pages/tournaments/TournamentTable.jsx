@@ -31,7 +31,8 @@ function IndividualTable({ data, sortBy, shouldHide, c }) {
     return (
         <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <Table
-                striped highlightOnHover horizontalSpacing="xs" verticalSpacing="xs"
+                striped highlightOnHover withColumnBorders withTableBorder
+                horizontalSpacing="xs" verticalSpacing="xs"
                 style={{ whiteSpace: 'nowrap', minWidth: 700 }}
                 styles={{
                     thead: { backgroundColor: c.tableHeader },
@@ -68,13 +69,13 @@ function IndividualTable({ data, sortBy, shouldHide, c }) {
                     ) : (
                         data.map((row, index) => (
                             <Table.Tr key={row.userId ?? index}>
-                                <Table.Td><Text fw={700}>{index + 1}</Text></Table.Td>
+                                <Table.Td><Text fw={500}>{index + 1}</Text></Table.Td>
                                 <Table.Td>
                                     <Group gap="sm" wrap="nowrap"
                                            component={row.userId ? Link : 'div'}
                                            to={row.userId ? `/players/${row.userId}` : undefined}
                                            style={{ textDecoration: 'none', color: 'inherit' }}>
-                                        <Avatar src={row.avatarUrl} size="sm" radius="xl" color="brandRed">
+                                        <Avatar  visibleFrom="sm" src={row.avatarUrl} size="sm" radius="xl" color="brandRed">
                                             {row.nickname?.substring(0, 2).toUpperCase()}
                                         </Avatar>
                                         <Text size="sm" fw={500}>{row.nickname}</Text>
@@ -120,7 +121,8 @@ function TeamTable({ data, shouldHide, c }) {
     return (
         <Box style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <Table
-                striped highlightOnHover horizontalSpacing="xs" verticalSpacing="xs"
+                striped highlightOnHover withColumnBorders withTableBorder
+                horizontalSpacing="xs" verticalSpacing="xs"
                 style={{ whiteSpace: 'nowrap', minWidth: 700 }}
                 styles={{
                     thead: { backgroundColor: c.tableHeader },
@@ -157,11 +159,11 @@ function TeamTable({ data, shouldHide, c }) {
                     ) : (
                         data.map((row, index) => (
                             <Table.Tr key={row.teamId ?? index}>
-                                <Table.Td><Text fw={700}>{index + 1}</Text></Table.Td>
+                                <Table.Td><Text fw={500}>{index + 1}</Text></Table.Td>
                                 <Table.Td>
-                                    <Text size="sm" fw={700}>{row.teamName}</Text>
+                                    <Text size="sm" fw={500}>{row.teamName}</Text>
                                 </Table.Td>
-                                <Table.Td fw={700} c="violet">
+                                <Table.Td fw={700}>
                                     {displayVal(row.totalScore, shouldHide)}
                                 </Table.Td>
                                 <Table.Td c="violet">
@@ -275,7 +277,7 @@ export default function TournamentTable({ tournament }) {
                         )}
                     </Group>
                     {/* Сортировка — только для личного */}
-                    {tableView === 'individual' && (
+                    {tableView === 'individual' && tournament?.type ==='season' && (
                         <SegmentedControl
                             value={sortBy}
                             onChange={setSortBy}

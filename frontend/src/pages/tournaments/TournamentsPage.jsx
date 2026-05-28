@@ -77,7 +77,7 @@ export default function TournamentsPage() {
             </Group>
 
             {/* Мобилка */}
-            <Box hiddenFrom="sm" mb="md">
+            <Box hiddenFrom="sm" mb="md" mx= '-20px'>
                 <Stack gap="xs">
                     <TextInput
                         placeholder="Поиск по названию..."
@@ -105,13 +105,15 @@ export default function TournamentsPage() {
             {loading ? (
                 <Center py="xl"><Loader color="brandRed" /></Center>
             ) : (
-                <Stack gap="md">
+                <Box mx={{ base: '-20px', sm: 0 }}>
                     {tournaments.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">Турниры не найдены</Text>
                     ) : (
-                        tournaments.map(tour => <TournamentCard key={tour.id} tour={tour} />)
+                        <Stack gap="md">
+                            {tournaments.map(tour => <TournamentCard key={tour.id} tour={tour} />)}
+                        </Stack>
                     )}
-                </Stack>
+                </Box>
             )}
         </Container>
     );

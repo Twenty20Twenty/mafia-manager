@@ -1,7 +1,10 @@
-package com.mafia.manager.security;
+package backend;
 
 import com.mafia.manager.entity.User;
 import com.mafia.manager.entity.enums.UserRole;
+import com.mafia.manager.security.CustomUserDetails;
+import com.mafia.manager.security.JwtAuthenticationFilter;
+import com.mafia.manager.security.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
@@ -30,13 +33,15 @@ import static org.mockito.Mockito.*;
 @DisplayName("JwtAuthenticationFilter — безопасность JWT")
 class JwtAuthenticationFilterTest {
 
-    @Mock JwtService          jwtService;
+    @Mock
+    JwtService jwtService;
     @Mock UserDetailsService  userDetailsService;
     @Mock FilterChain         filterChain;
     @Mock HttpServletRequest  request;
     @Mock HttpServletResponse response;
 
-    @InjectMocks JwtAuthenticationFilter filter;
+    @InjectMocks
+    JwtAuthenticationFilter filter;
 
     private CustomUserDetails validUserDetails;
 

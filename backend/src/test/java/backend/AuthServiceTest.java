@@ -1,4 +1,4 @@
-package com.mafia.manager.service;
+package backend;
 
 import com.mafia.manager.dto.*;
 import com.mafia.manager.entity.User;
@@ -11,6 +11,8 @@ import com.mafia.manager.repository.CityRepository;
 import com.mafia.manager.repository.UserRepository;
 import com.mafia.manager.security.CustomUserDetails;
 import com.mafia.manager.security.JwtService;
+import com.mafia.manager.service.AuthService;
+import com.mafia.manager.service.EmailVerificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,9 +45,11 @@ class AuthServiceTest {
     @Mock PasswordEncoder          passwordEncoder;
     @Mock JwtService               jwtService;
     @Mock AuthenticationManager    authenticationManager;
-    @Mock EmailVerificationService emailVerificationService;
+    @Mock
+    EmailVerificationService emailVerificationService;
 
-    @InjectMocks AuthService authService;
+    @InjectMocks
+    AuthService authService;
 
     // ── Фабрика пользователей ─────────────────────────────────────────────────
 

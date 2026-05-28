@@ -12,27 +12,28 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Сервис генерации рассадки (сидинга) игроков по столам.
  *
  * <p>Поддерживает три режима:</p>
  * <ul>
- *   <li><strong>Balanced (обычный)</strong> — равномерное распределение, минимизирующее
- *       повторные пересечения игроков за одним столом и повторные слоты одного игрока</li>
- *   <li><strong>Swiss</strong> — швейцарская система: внутри тира игроки распределяются
- *       случайно, тиры формируются по текущему рейтингу лидерборда</li>
- *   <li><strong>Final Round</strong> — финальная рассадка топ-10 игроков без учёта истории слотов</li>
+ * <li><strong>Balanced (обычный)</strong> — равномерное распределение, минимизирующее
+ * повторные пересечения игроков за одним столом и повторные слоты одного игрока</li>
+ * <li><strong>Swiss</strong> — швейцарская система: внутри тира игроки распределяются
+ * случайно, тиры формируются по текущему рейтингу лидерборда</li>
+ * <li><strong>Final Round</strong> — финальная рассадка топ-10 игроков без учёта истории слотов</li>
  * </ul>
  *
  * <p><strong>Алгоритм (Constraints Solver) с фоллбэком на слоты:</strong></p>
  * <ol>
- *   <li>Перемешиваем игроков случайно</li>
- *   <li>Для каждого игрока выбираем стол с наименьшим числом прошлых пересечений</li>
- *   <li>Ищем свободный <em>уникальный</em> слот (1–10), на котором игрок ещё не сидел</li>
- *   <li>Если уникальных слотов нет — берём любой свободный слот (фоллбэк для 11+ туров)</li>
- *   <li>Проверяем жёсткие ограничения: исключения «игрок–игрок» и командные квоты</li>
- *   <li>При неудаче за 50 попыток — {@link RuntimeException}</li>
+ * <li>Перемешиваем игроков случайно</li>
+ * <li>Для каждого игрока выбираем стол с наименьшим числом прошлых пересечений</li>
+ * <li>Ищем свободный <em>уникальный</em> слот (1–10), на котором игрок ещё не сидел</li>
+ * <li>Если уникальных слотов нет — берём любой свободный слот (фоллбэк для 11+ туров)</li>
+ * <li>Проверяем жёсткие ограничения: исключения «игрок–игрок» и командные квоты</li>
+ * <li>При неудаче за 50 попыток — {@link RuntimeException}</li>
  * </ol>
  */
 @Service
@@ -50,6 +51,12 @@ public class SeedingService {
     /** Максимальное число попыток рассадки перед ошибкой. */
     private static final int MAX_SEEDING_ATTEMPTS = 100;
 
+    // --- Константы взвешивания (Tuning Parameters) ---
+    // ALPHA: Приоритет минимизации конфликтов игроков с сидящими за столом.
+    private static final double ALPHA_PLAYER_CONFLICT = 2.5;
+    // BETA: Вес штрафа за отклонение от среднего числа встреч с судьей.
+    // Чем выше значение, тем сильнее алгоритм старается балансировать судей.
+    private static final double BETA_JUDGE_BALANCE = 1.0;
 
     /**
      * Генерирует следующий тур (или несколько туров) для турнира.
@@ -87,7 +94,6 @@ public class SeedingService {
                     participants, exceptions, tableJudges, playerTeams);
         }
     }
-
 
     /**
      * Генерирует финальный тур для топ-10 игроков, зафиксированных в настройках турнира.
@@ -245,7 +251,7 @@ public class SeedingService {
 
         throw new RuntimeException(
                 "Не удалось сгенерировать валидную рассадку за " + MAX_SEEDING_ATTEMPTS
-                + " попыток. Проверьте исключения и командные квоты."
+                        + " попыток. Проверьте исключения и командные квоты."
         );
     }
 
@@ -284,11 +290,11 @@ public class SeedingService {
      *
      * <p><strong>Логика выбора слота (два прохода):</strong></p>
      * <ol>
-     *   <li><em>Первый проход</em> — ищем свободный уникальный слот (не занятый игроком ранее).
-     *       Это мягкое требование: соблюдаем если возможно.</li>
-     *   <li><em>Фоллбэк</em> — если ни за одним из подходящих столов уникального слота нет,
-     *       берём любой свободный слот (без учёта истории). Это необходимо при 11+ турах,
-     *       когда игрок уже занимал все 10 позиций.</li>
+     * <li><em>Первый проход</em> — ищем свободный уникальный слот (не занятый игроком ранее).
+     * Это мягкое требование: соблюдаем если возможно.</li>
+     * <li><em>Фоллбэк</em> — если ни за одним из подходящих столов уникального слота нет,
+     * берём любой свободный слот (без учёта истории). Это необходимо при 11+ турах,
+     * когда игрок уже занимал все 10 позиций.</li>
      * </ol>
      *
      * <p>Жёсткие ограничения (исключения «игрок–игрок», командные квоты) соблюдаются
@@ -307,7 +313,7 @@ public class SeedingService {
             Map<Long, Long> playerTeams
     ) {
         Set<Integer> usedSlots = historyInfo.playedSlots.getOrDefault(player.getId(), new HashSet<>());
-        List<Integer> tableOrder = getPreferredTableOrder(player, tables, historyInfo.intersections, isSwiss);
+        List<Integer> tableOrder = getPreferredTableOrder(player, tables, historyInfo, isSwiss, tableJudges);
 
         // ── Первый проход: уникальный слот ───────────────────────────────────
         for (Integer tableNum : tableOrder) {
@@ -364,9 +370,9 @@ public class SeedingService {
      *
      * <p>Проверяются:</p>
      * <ul>
-     *   <li>Исключения «игрок–игрок» (не должны сидеть вместе)</li>
-     *   <li>Командные квоты (в командном турнире игроки одной команды не сидят вместе)</li>
-     *   <li>Исключение «игрок–судья» этого стола</li>
+     * <li>Исключения «игрок–игрок» (не должны сидеть вместе)</li>
+     * <li>Командные квоты (в командном турнире игроки одной команды не сидят вместе)</li>
+     * <li>Исключение «игрок–судья» этого стола</li>
      * </ul>
      *
      * @return {@code true}, если ограничения не нарушены
@@ -394,7 +400,7 @@ public class SeedingService {
     private boolean hasPlayerConflict(User player, User opponent, List<TournamentSeedingException> exceptions) {
         return exceptions.stream().anyMatch(ex ->
                 (ex.getPlayer1().getId().equals(player.getId())   && ex.getPlayer2().getId().equals(opponent.getId())) ||
-                (ex.getPlayer1().getId().equals(opponent.getId()) && ex.getPlayer2().getId().equals(player.getId()))
+                        (ex.getPlayer1().getId().equals(opponent.getId()) && ex.getPlayer2().getId().equals(player.getId()))
         );
     }
 
@@ -414,64 +420,104 @@ public class SeedingService {
     private boolean hasJudgeConflict(User player, Long judgeId, List<TournamentSeedingException> exceptions) {
         return exceptions.stream().anyMatch(ex ->
                 (ex.getPlayer1().getId().equals(player.getId()) && ex.getPlayer2().getId().equals(judgeId)) ||
-                (ex.getPlayer1().getId().equals(judgeId)        && ex.getPlayer2().getId().equals(player.getId()))
+                        (ex.getPlayer1().getId().equals(judgeId)        && ex.getPlayer2().getId().equals(player.getId()))
         );
     }
 
     /**
      * Возвращает столы в порядке предпочтения для игрока.
-     *
-     * <p>В швейцарском режиме порядок случаен.
-     * В обычном режиме столы сортируются по суммарному числу прошлых встреч с уже сидящими там игроками
-     * (чем меньше встреч — тем выше приоритет).</p>
+     * Использует композитный скоринг для определения порядка столов.
      */
     private List<Integer> getPreferredTableOrder(
             User player,
             Map<Integer, User[]> tables,
-            Map<Long, Map<Long, Integer>> historyIntersections,
-            boolean isSwiss
+            SeedingHistoryInfo historyInfo,
+            boolean isSwiss,
+            Map<Integer, Long> tableJudges
     ) {
-        List<Integer> tableNums = new ArrayList<>(tables.keySet());
-
         if (isSwiss) {
+            List<Integer> tableNums = new ArrayList<>(tables.keySet());
             Collections.shuffle(tableNums);
             return tableNums;
         }
 
-        Map<Long, Integer> playerHistory = historyIntersections.getOrDefault(player.getId(), new HashMap<>());
+        // Получаем историю конфликтов игроков и судей для текущего игрока
+        Map<Long, Integer> playerHistory = historyInfo.intersections.getOrDefault(player.getId(), new HashMap<>());
+        Map<Long, Integer> judgeHistory  = historyInfo.judgeAppearances.getOrDefault(player.getId(), new HashMap<>());
+
+        // Собираем список всех номеров столов и сортируем их по скорингу
+        List<Integer> tableNums = new ArrayList<>(tables.keySet());
 
         tableNums.sort((t1, t2) -> {
-            int score1 = Arrays.stream(tables.get(t1))
-                    .filter(Objects::nonNull)
-                    .mapToInt(u -> playerHistory.getOrDefault(u.getId(), 0))
-                    .sum();
-            int score2 = Arrays.stream(tables.get(t2))
-                    .filter(Objects::nonNull)
-                    .mapToInt(u -> playerHistory.getOrDefault(u.getId(), 0))
-                    .sum();
-            return Integer.compare(score1, score2);
+            double score1 = computeTableScore(player, tables.get(t1), tableJudges.get(t1),
+                    playerHistory, judgeHistory);
+            double score2 = computeTableScore(player, tables.get(t2), tableJudges.get(t2),
+                    playerHistory, judgeHistory);
+            // Сортировка по возрастанию счета (минимум = максимум предпочтение)
+            return Double.compare(score1, score2);
         });
 
         return tableNums;
+    }
+
+    /**
+     * Вычисляет композитный счет для данного стола.
+     */
+    private double computeTableScore(
+            User player,
+            User[] table,
+            Long judgeId,
+            Map<Long, Integer> playerHistory,
+            Map<Long, Integer> judgeHistory
+    ) {
+        // 1. S_Players: сумма прошлых встреч с сидящими за столом (Конфликт игроков)
+        double playerConflict = Arrays.stream(table)
+                .filter(Objects::nonNull)
+                .mapToDouble(u -> playerHistory.getOrDefault(u.getId(), 0))
+                .sum();
+
+        // 2. S_Judge: штраф за отклонение от среднего числа встреч с судьёй (Балансировка судей)
+        double judgeBalance = 0;
+        if (judgeId != null) {
+            long currentEncounters = judgeHistory.getOrDefault(judgeId, 0);
+
+            // Расчет среднего значения по всем известным судьям
+            Set<Long> judgesMet = judgeHistory.keySet();
+            double avgJudgeEncounters = judgesMet.isEmpty() ? 0.0 : judgeHistory.values().stream()
+                    .mapToInt(Integer::intValue).average().orElse(0.0);
+
+            // Отклонение (deviation): насколько сильно текущее число встреч отличается от среднего
+            double deviation = Math.abs(currentEncounters - avgJudgeEncounters);
+
+            // Штраф: Чем больше отклонение, тем выше штраф. Используем возведение в степень для усиления эффекта.
+            judgeBalance = Math.pow(deviation, 2) * BETA_JUDGE_BALANCE;
+        }
+
+        // Композитный счет (FinalScore = ALPHA * Conflict + JUDGE_BALANCE)
+        return ALPHA_PLAYER_CONFLICT * playerConflict + judgeBalance;
     }
 
     // ── ИСТОРИЯ И СОХРАНЕНИЕ ──────────────────────────────────────────────────
 
     /**
      * Собирает историческую информацию по всем прошлым играм турнира:
-     * какие слоты занимал каждый игрок и сколько раз он встречался с каждым оппонентом.
+     * какие слоты занимал каждый игрок и сколько раз он встречался с каждым оппонентом и судьей.
      */
     private SeedingHistoryInfo buildHistoryInfo(List<Game> history) {
         SeedingHistoryInfo info = new SeedingHistoryInfo();
 
         for (Game game : history) {
+            Long judgeId = game.getJudge() != null ? game.getJudge().getId() : null;
+            // ВАЖНО: Загружаем слоты для всей игры, чтобы корректно получить всех оппонентов и судью.
             List<GameSlot> slots = gameSlotRepository.findByGameId(game.getId());
+
             for (GameSlot slot : slots) {
                 if (slot.getUser() == null) continue;
 
                 Long pId = slot.getUser().getId();
                 info.playedSlots.computeIfAbsent(pId, k -> new HashSet<>()).add(slot.getSlotNumber());
 
+                // 1. Встречи игрок–игрок
                 Map<Long, Integer> pIntersections = info.intersections.computeIfAbsent(pId, k -> new HashMap<>());
                 for (GameSlot opponent : slots) {
                     if (opponent.getUser() == null) continue;
@@ -479,6 +525,13 @@ public class SeedingService {
                     if (!pId.equals(oppId)) {
                         pIntersections.merge(oppId, 1, Integer::sum);
                     }
+                }
+
+                // 2. Встречи игрок–судья
+                if (judgeId != null) {
+                    info.judgeAppearances
+                            .computeIfAbsent(pId, k -> new HashMap<>())
+                            .merge(judgeId, 1, Integer::sum);
                 }
             }
         }
@@ -713,12 +766,14 @@ public class SeedingService {
      *
      * <p>Содержит:</p>
      * <ul>
-     *   <li>{@code playedSlots}    — карта «ID игрока → набор слотов (1–10)», на которых он уже сидел</li>
-     *   <li>{@code intersections}  — карта «ID игрока → (ID оппонента → число встреч)»</li>
+     * <li>{@code playedSlots}    — карта «ID игрока → набор слотов (1–10)», на которых он уже сидел</li>
+     * <li>{@code intersections}  — карта «ID игрока → (ID оппонента → число встреч)»</li>
+     * <li>{@code judgeAppearances} — карта «ID игрока → (ID судьи → число встреч)»</li>
      * </ul>
      */
     private static class SeedingHistoryInfo {
-        final Map<Long, Set<Integer>>          playedSlots   = new HashMap<>();
-        final Map<Long, Map<Long, Integer>>    intersections = new HashMap<>();
+        final Map<Long, Set<Integer>>          playedSlots      = new HashMap<>();
+        final Map<Long, Map<Long, Integer>>    intersections    = new HashMap<>();
+        final Map<Long, Map<Long, Integer>>    judgeAppearances = new HashMap<>();
     }
 }

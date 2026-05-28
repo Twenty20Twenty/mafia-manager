@@ -50,7 +50,7 @@ function DeleteTournamentModal({ opened, onClose, tournament }) {
 
     // Сравниваем с trim() с обеих сторон
     const isMatch = tournament?.title && confirmTitle.trim() === tournament.title.trim();
-    //console.log(tournament?.title)
+
 
     return (
         <Modal

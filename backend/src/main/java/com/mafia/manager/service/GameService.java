@@ -219,7 +219,7 @@ public class GameService {
      * Вычисляет очки за «Лучший ход».
      * Объявлен package-private для тестирования.
      */
-    static BigDecimal calcBestMovePoints(List<Integer> candidateSlotNumbers, List<GameSlot> allSlots) {
+    public static BigDecimal calcBestMovePoints(List<Integer> candidateSlotNumbers, List<GameSlot> allSlots) {
         if (candidateSlotNumbers == null || candidateSlotNumbers.isEmpty()) {
             return BigDecimal.ZERO;
         }

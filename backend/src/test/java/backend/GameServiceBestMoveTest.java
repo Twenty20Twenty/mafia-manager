@@ -1,6 +1,7 @@
-package com.mafia.manager.service;
+package backend;
 
 import com.mafia.manager.entity.GameSlot;
+import com.mafia.manager.service.GameService;
 import com.mafia.manager.entity.enums.PlayerRoleInGame;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

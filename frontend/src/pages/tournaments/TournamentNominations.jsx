@@ -10,45 +10,56 @@ function NominationCard({ title, players, scoreKey, scoreLabel, color, c }) {
     const [first, second, third] = players;
 
     return (
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: c.surface3 }}>
-                <Center mb="md">
-                    <Badge size="lg" color={color} variant="light">{title}</Badge>
-                </Center>
-                <Group justify="center" gap="sm" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <Avatar src={first.avatarUrl} size={80} radius={80} color={color}>
+        <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Card
+                shadow="xs"
+                padding="xs"
+                radius="md"
+                withBorder
+                h="100%"
+                style={{ backgroundColor: c.surface3, display: 'flex', flexDirection: 'column' }}
+            >
+                {/* Компактный заголовок */}
+                <Group justify="space-between" mb="xs" wrap="nowrap">
+                    <Badge size="sm" color={color} variant="light">{title}</Badge>
+                    <Text size="10px" c="dimmed" ta="right">{scoreLabel}</Text>
+                </Group>
+
+                {/* Победитель */}
+                <Group gap="sm" wrap="nowrap" mb={(second || third) ? 'xs' : 0}>
+                    <Avatar src={first.avatarUrl} size={44} radius="xl" color={color}>
                         {first.nickname.substring(0, 2).toUpperCase()}
                     </Avatar>
-                    <Text fw={700} size="lg" ta="center">{first.nickname}</Text>
-                    <Text size="sm" c="dimmed">
-                        {scoreLabel}: <Text span fw={700}>{Number(first[scoreKey]).toFixed(2)}</Text>
-                    </Text>
+                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                        <Text fw={700} size="sm" truncate>{first.nickname}</Text>
+                        <Text size="xs" fw={500}>
+                            {Number(first[scoreKey]).toFixed(2)}
+                        </Text>
+                    </Stack>
                 </Group>
 
                 {(second || third) && (
-                    <>
-                        <Divider my="sm" opacity={0.3} />
-                        <Stack gap={6}>
-                            {second && second[scoreKey] > 0 && (
-                                <Group justify="space-between" px={4}>
-                                    <Group gap={6}>
-                                        <Text size="xs" c="dimmed" w={14} ta="center">2</Text>
-                                        <Text size="xs" c="dimmed">{second.nickname}</Text>
-                                    </Group>
-                                    <Text size="xs" c="dimmed">{Number(second[scoreKey]).toFixed(2)}</Text>
-                                </Group>
-                            )}
-                            {third && third[scoreKey] > 0 && (
-                                <Group justify="space-between" px={4}>
-                                    <Group gap={6}>
-                                        <Text size="xs" c="dimmed" w={14} ta="center">3</Text>
-                                        <Text size="xs" c="dimmed">{third.nickname}</Text>
-                                    </Group>
-                                    <Text size="xs" c="dimmed">{Number(third[scoreKey]).toFixed(2)}</Text>
-                                </Group>
-                            )}
-                        </Stack>
-                    </>
+                    <Stack gap={4} mt="auto" style={{ width: '100%' }}>
+                        <Divider opacity={0.2} mb={2} />
+                        {second && second[scoreKey] > 0 && (
+                            <Group justify="space-between" wrap="nowrap">
+                                <Text size="xs" c="dimmed" truncate style={{ maxWidth: '70%' }}>
+                                    <Text span fw={500} mr={4}>2.</Text>
+                                    {second.nickname}
+                                </Text>
+                                <Text size="xs" c="dimmed">{Number(second[scoreKey]).toFixed(2)}</Text>
+                            </Group>
+                        )}
+                        {third && third[scoreKey] > 0 && (
+                            <Group justify="space-between" wrap="nowrap">
+                                <Text size="xs" c="dimmed" truncate style={{ maxWidth: '70%' }}>
+                                    <Text span fw={500} mr={4}>3.</Text>
+                                    {third.nickname}
+                                </Text>
+                                <Text size="xs" c="dimmed">{Number(third[scoreKey]).toFixed(2)}</Text>
+                            </Group>
+                        )}
+                    </Stack>
                 )}
             </Card>
         </Grid.Col>
@@ -100,12 +111,12 @@ export default function TournamentNominations({ tournament, isRating }) {
     const label = (base) => `${isRating ? 'Ср.' : 'Сум.'} ${base}`;
 
     return (
-        <Grid>
-            <NominationCard c={c} title="MVP Турнира"    players={top3('mvpScore')}                scoreKey="mvpScore"                scoreLabel={label('доп. + ЛХ')} color="orange" />
-            <NominationCard c={c} title="Лучший Красный" players={top3('nominationScoreCivilian')} scoreKey="nominationScoreCivilian" scoreLabel={label('доп (Мир)')}  color="red"    />
-            <NominationCard c={c} title="Лучший Шериф"   players={top3('nominationScoreSheriff')}  scoreKey="nominationScoreSheriff"  scoreLabel={label('доп (Ш)')}    color="yellow" />
-            <NominationCard c={c} title="Лучший Черный"  players={top3('nominationScoreMafia')}    scoreKey="nominationScoreMafia"    scoreLabel={label('доп (Маф)')}  color="dark"   />
-            <NominationCard c={c} title="Лучший Дон"     players={top3('nominationScoreDon')}      scoreKey="nominationScoreDon"      scoreLabel={label('доп (Д)')}    color="grape"  />
+        <Grid align="stretch">
+            <NominationCard c={c} title="MVP"           players={top3('mvpScore')}                scoreKey="mvpScore"                scoreLabel={label('доп. + ЛХ')} color="orange" />
+            <NominationCard c={c} title="Лучший Красный" players={top3('nominationScoreCivilian')} scoreKey="nominationScoreCivilian" scoreLabel={label('доп. Мир')}     color="red"    />
+            <NominationCard c={c} title="Лучший Шериф"   players={top3('nominationScoreSheriff')}  scoreKey="nominationScoreSheriff"  scoreLabel={label('доп. Шериф')}   color="yellow" />
+            <NominationCard c={c} title="Лучший Черный"  players={top3('nominationScoreMafia')}    scoreKey="nominationScoreMafia"    scoreLabel={label('доп. Маф')}     color="black"   />
+            <NominationCard c={c} title="Лучший Дон"     players={top3('nominationScoreDon')}      scoreKey="nominationScoreDon"      scoreLabel={label('доп. Дон')}     color="grape"  />
         </Grid>
     );
 }

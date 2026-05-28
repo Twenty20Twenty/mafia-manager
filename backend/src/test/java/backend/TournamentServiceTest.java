@@ -1,4 +1,4 @@
-package com.mafia.manager.service;
+package backend;
 
 import com.mafia.manager.dto.TournamentDto;
 import com.mafia.manager.dto.LeaderboardEntryDto;
@@ -6,6 +6,8 @@ import com.mafia.manager.entity.*;
 import com.mafia.manager.entity.enums.*;
 import com.mafia.manager.entity.json.TournamentSettings;
 import com.mafia.manager.repository.*;
+import com.mafia.manager.service.PlayerStatsService;
+import com.mafia.manager.service.TournamentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,9 +43,11 @@ class TournamentServiceTest {
     @Mock TournamentParticipantRepository participantRepository;
     @Mock SeedingExceptionRepository      exceptionRepository;
     @Mock TournamentJudgeRepository       tournamentJudgeRepository;
-    @Mock PlayerStatsService              playerStatsService;
+    @Mock
+    PlayerStatsService playerStatsService;
 
-    @InjectMocks TournamentService tournamentService;
+    @InjectMocks
+    TournamentService tournamentService;
 
     // ── Хелперы ───────────────────────────────────────────────────────────────
 

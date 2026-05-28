@@ -65,7 +65,6 @@ export default function BestMoveSection({ bestMove, setBestMove, slots }) {
                                 })}
                                 clearable
                                 disabled={!bestMove.authorSlotNumber}
-                                comboboxProps={{ withinPortal: false, onOptionSubmit: () => {}}}
                             />
                         )}
                     </Grid.Col>

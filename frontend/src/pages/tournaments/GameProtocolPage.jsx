@@ -117,7 +117,7 @@ export default function GameProtocolPage({ isNewRatingGame = false }) {
                     api.get(`/tournaments/${tournamentId}`),
                 ]);
                 setTournament(tourRes.data);
-                console.log('tournament', tourRes);
+
             } catch (err) {
                 console.error('Ошибка загрузки турнира', err);
                 setError('Не удалось загрузить данные турнира');
@@ -145,9 +145,6 @@ export default function GameProtocolPage({ isNewRatingGame = false }) {
     if (loading) return <Center p="xl" mt="xl"><Loader color="brandRed" size="xl" /></Center>;
 
     const tournamentIsOver = tournament ? tournament.status === 'completed' : true ;
-
-    console.log(tournament);
-    console.log(tournament?.status);
 
     if (pageState === 'form') {
         return <NewGameForm tournamentId={tournamentId} onGameCreated={handleGameCreated} />;

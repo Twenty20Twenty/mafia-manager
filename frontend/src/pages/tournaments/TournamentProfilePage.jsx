@@ -68,68 +68,70 @@ export default function TournamentProfilePage() {
 
     return (
         <Container size="xl" py="xl">
+
             <Button component={Link} to="/tournaments" variant="subtle" color="gray"
                     leftSection={<IconArrowLeft size={16} />} mb="md">
                 Все турниры
             </Button>
+            <Box mx={{ base: '-30px', sm: 0 }}>
+                <TournamentHeader
+                    tournament={tournament}
+                    participantsCount={approvedParticipants.length}
+                    isRating={isRating}
+                    canManage={canManage}
+                    isRegistrationOpen={isRegistrationOpen}
+                    isAlreadyParticipant={isAlreadyParticipant}
+                    isRequestSent={isRequestSent}
+                    user={user}
+                    onRegister={handleRegister}
+                />
 
-            <TournamentHeader
-                tournament={tournament}
-                participantsCount={approvedParticipants.length}
-                isRating={isRating}
-                canManage={canManage}
-                isRegistrationOpen={isRegistrationOpen}
-                isAlreadyParticipant={isAlreadyParticipant}
-                isRequestSent={isRequestSent}
-                user={user}
-                onRegister={handleRegister}
-            />
+                <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
+                    <Tabs.List mb="md" grow justify="flex-start">
+                        <Tabs.Tab value="table" leftSection={<IconTable size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>
+                                <Text visibleFrom="sm">Турнирная таблица</Text>
+                                <Text hiddenFrom="sm">Таблица</Text>
+                            </Box>
+                        </Tabs.Tab>
+                        <Tabs.Tab value="games" leftSection={<IconSwords size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>
+                                <Text visibleFrom="sm">Игры (Туры)</Text>
+                                <Text hiddenFrom="sm">Игры</Text>
+                            </Box>
+                        </Tabs.Tab>
+                        <Tabs.Tab value="nominations" leftSection={<IconStar size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>
+                                <Text visibleFrom="sm">Номинации</Text>
+                                {/*<Text hiddenFrom="sm">Номин.</Text>*/}
+                            </Box>
+                        </Tabs.Tab>
+                        <Tabs.Tab value="participants" leftSection={<IconUsers size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>
+                                <Text visibleFrom="sm">Участники</Text>
+                                {/*<Text hiddenFrom="sm">Игроки</Text>*/}
+                            </Box>
+                        </Tabs.Tab>
+                    </Tabs.List>
 
-            <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
-                <Tabs.List mb="md" grow justify="flex-start">
-                    <Tabs.Tab value="table" leftSection={<IconTable size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>
-                            <Text visibleFrom="sm">Турнирная таблица</Text>
-                            <Text hiddenFrom="sm">Таблица</Text>
-                        </Box>
-                    </Tabs.Tab>
-                    <Tabs.Tab value="games" leftSection={<IconSwords size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>
-                            <Text visibleFrom="sm">Игры (Туры)</Text>
-                            <Text hiddenFrom="sm">Игры</Text>
-                        </Box>
-                    </Tabs.Tab>
-                    <Tabs.Tab value="nominations" leftSection={<IconStar size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>
-                            <Text visibleFrom="sm">Номинации</Text>
-                            <Text hiddenFrom="sm">Номин.</Text>
-                        </Box>
-                    </Tabs.Tab>
-                    <Tabs.Tab value="participants" leftSection={<IconUsers size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>
-                            <Text visibleFrom="sm">Участники</Text>
-                            <Text hiddenFrom="sm">Игроки</Text>
-                        </Box>
-                    </Tabs.Tab>
-                </Tabs.List>
-
-                <Tabs.Panel value="table">
-                    <TournamentTable tournament={tournament} />
-                </Tabs.Panel>
-                <Tabs.Panel value="games">
-                    <TournamentGamesTab tournament={tournament} participantOptions={approvedParticipants} />
-                </Tabs.Panel>
-                <Tabs.Panel value="nominations">
-                    <TournamentNominations tournament={tournament} isRating={isRating} />
-                </Tabs.Panel>
-                <Tabs.Panel value="participants">
-                    <ParticipantsList
-                        participants={participants}
-                        isTeamTournament={isTeamTournament}
-                        tournamentId={Number(id)}
-                    />
-                </Tabs.Panel>
-            </Tabs>
+                    <Tabs.Panel value="table">
+                            <TournamentTable tournament={tournament} />
+                    </Tabs.Panel>
+                    <Tabs.Panel value="games">
+                        <TournamentGamesTab tournament={tournament} participantOptions={approvedParticipants} />
+                    </Tabs.Panel>
+                    <Tabs.Panel value="nominations">
+                        <TournamentNominations tournament={tournament} isRating={isRating} />
+                    </Tabs.Panel>
+                    <Tabs.Panel value="participants">
+                        <ParticipantsList
+                            participants={participants}
+                            isTeamTournament={isTeamTournament}
+                            tournamentId={Number(id)}
+                        />
+                    </Tabs.Panel>
+                </Tabs>
+            </Box>
         </Container>
     );
 }

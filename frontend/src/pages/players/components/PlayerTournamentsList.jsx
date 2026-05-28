@@ -86,7 +86,7 @@ function TournamentRow({ tour, c }) {
                 </Stack>
 
                 {/* Бейджи */}
-                <Group gap={4} style={{ flexShrink: 0 }} wrap="nowrap">
+                <Stack gap="xs" style={{ flexShrink: 0 }} wrap="nowrap" align="flex-end">
                     <Badge size="xs" color={typeInfo.color} variant="outline">
                         {typeInfo.label}
                     </Badge>
@@ -97,7 +97,7 @@ function TournamentRow({ tour, c }) {
                     {tour.type === 'team' && (
                         <RankBadge rank={tour.teamRank} label="Ком." color="violet" />
                     )}
-                </Group>
+                </Stack>
             </Group>
         </Paper>
     );
@@ -142,7 +142,7 @@ export default function PlayerTournamentsList({ userId }) {
     const finished  = tournaments.filter(t => t.status === 'completed' || t.status === 'archived');
 
     return (
-        <Stack gap="xs">
+        <Stack gap="xs" mx={{ base: '-20px', sm: 0 }}>
             {active.length > 0 && (
                 <>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="xs">
