@@ -4,11 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import {
     Container, Paper, Avatar, Title, Text, Group, Grid,
     Stack, Badge, Button, Center, Loader, Select,
-    RingProgress, Tooltip, Tabs, Box
+    RingProgress, Tooltip, Tabs, Box, Popover, Checkbox, ActionIcon
 } from '@mantine/core';
 import {
     IconMapPin, IconArrowLeft, IconDeviceGamepad2,
-    IconTrophy, IconChartBar, IconSwords
+    IconTrophy, IconChartBar, IconSwords, IconFilter
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
@@ -23,6 +23,14 @@ const ROLE_CONFIG = {
     sheriff:  { label: 'Шериф',  color: 'yellow', winsFor: 'red'   },
     mafia:    { label: 'Мафия',  color: 'blue',   winsFor: 'black' },
     don:      { label: 'Дон',    color: 'grape',  winsFor: 'black' },
+};
+
+const TOURNAMENT_TYPES = ['individual', 'team', 'season'];
+
+const TYPE_CONFIG = {
+    individual: { label: 'Личный',    color: 'blue'   },
+    team:       { label: 'Командный', color: 'violet' },
+    season:     { label: 'Рейтинг',   color: 'teal'   },
 };
 
 // ── Утилиты ───────────────────────────────────────────────────────────────────
@@ -45,19 +53,92 @@ function isValidId(id) {
     return !isNaN(n) && n > 0;
 }
 
+/**
+ * Агрегирует записи statsByType по выбранным типам и конкретному периоду.
+ * Возвращает объект в том же формате что и PlayerStatsDto.
+ */
+function aggregateStatsByType(statsByType, selectedTypes, periodYear) {
+    // Фильтруем по выбранным типам и нужному периоду
+    const filtered = statsByType.filter(s => {
+        const typeOk = selectedTypes.includes(s.tournamentType);
+        const periodOk = periodYear === 'all'
+            ? s.periodYear === null
+            : String(s.periodYear) === periodYear;
+        return typeOk && periodOk;
+    });
+
+    if (filtered.length === 0) return null;
+
+    // Суммируем все поля
+    const agg = {
+        totalGames:        0,
+        gamesCivilian:     0, gamesSheriff: 0, gamesMafia: 0, gamesDon: 0,
+        winsCivilian:      0, winsSheriff:  0, winsMafia:  0, winsDon:  0,
+        bestMovesTotal:    0, bestMovesPerfect: 0,
+        firstKilledCount:  0,
+        totalFouls:        0,
+        periodYear:        periodYear === 'all' ? null : Number(periodYear),
+    };
+
+    filtered.forEach(s => {
+        agg.totalGames       += s.totalGames       || 0;
+        agg.gamesCivilian    += s.gamesCivilian    || 0;
+        agg.gamesSheriff     += s.gamesSheriff     || 0;
+        agg.gamesMafia       += s.gamesMafia       || 0;
+        agg.gamesDon         += s.gamesDon         || 0;
+        agg.winsCivilian     += s.winsCivilian     || 0;
+        agg.winsSheriff      += s.winsSheriff      || 0;
+        agg.winsMafia        += s.winsMafia        || 0;
+        agg.winsDon          += s.winsDon          || 0;
+        agg.bestMovesTotal   += s.bestMovesTotal   || 0;
+        agg.bestMovesPerfect += s.bestMovesPerfect || 0;
+        agg.firstKilledCount += s.firstKilledCount || 0;
+        agg.totalFouls       += s.totalFouls       || 0;
+    });
+
+    return agg;
+}
+
+/**
+ * Собирает список доступных периодов из statsByType с учётом выбранных типов.
+ */
+function buildPeriodOptionsFromByType(statsByType, selectedTypes) {
+    const periods = new Set();
+    statsByType
+        .filter(s => selectedTypes.includes(s.tournamentType))
+        .forEach(s => {
+            periods.add(s.periodYear === null ? 'all' : String(s.periodYear));
+        });
+
+    const options = [];
+    if (periods.has('all')) options.push({ value: 'all', label: 'За всё время' });
+
+    const years = Array.from(periods)
+        .filter(p => p !== 'all')
+        .sort((a, b) => Number(b) - Number(a));
+    years.forEach(y => options.push({ value: y, label: y }));
+
+    return options;
+}
+
 // ── Главный компонент ─────────────────────────────────────────────────────────
 
 export default function PlayerProfilePage() {
     const { id } = useParams();
     const c = useThemeColors();
 
-    const [player, setPlayer]                     = useState(null);
-    const [club, setClub]                         = useState(null);
-    const [statsList, setStatsList]               = useState([]);
-    const [selectedPeriod, setSelectedPeriod]     = useState('all');
-    const [loading, setLoading]                   = useState(true);
-    const [notFound, setNotFound]                 = useState(false);
-    const [activeTab, setActiveTab]               = useState('stats');
+    const [player, setPlayer]                       = useState(null);
+    const [club, setClub]                           = useState(null);
+    const [statsByType, setStatsByType]             = useState([]);
+    const [playerTournaments, setPlayerTournaments] = useState([]);
+    const [selectedPeriod, setSelectedPeriod]       = useState('all');
+    const [loading, setLoading]                     = useState(true);
+    const [notFound, setNotFound]                   = useState(false);
+    const [activeTab, setActiveTab]                 = useState('stats');
+
+    // Фильтр по типу турнира — все выбраны по умолчанию
+    const [filterOpen, setFilterOpen]       = useState(false);
+    const [selectedTypes, setSelectedTypes] = useState([...TOURNAMENT_TYPES]);
 
     useEffect(() => {
         if (!isValidId(id)) { setNotFound(true); setLoading(false); return; }
@@ -66,12 +147,15 @@ export default function PlayerProfilePage() {
             try {
                 setLoading(true);
                 setNotFound(false);
-                const [playerRes, statsRes] = await Promise.all([
+                const [playerRes, statsByTypeRes, toursRes] = await Promise.all([
                     api.get(`/users/${id}`),
-                    api.get(`/users/${id}/stats`),
+                    api.get(`/users/${id}/stats-by-type`),
+                    api.get(`/users/${id}/tournaments`),
                 ]);
                 setPlayer(playerRes.data);
-                setStatsList(statsRes.data);
+                setStatsByType(statsByTypeRes.data || []);
+                setPlayerTournaments(toursRes.data || []);
+
                 if (playerRes.data.clubId) {
                     try {
                         const clubRes = await api.get(`/clubs/${playerRes.data.clubId}`);
@@ -90,15 +174,37 @@ export default function PlayerProfilePage() {
         fetchAll();
     }, [id]);
 
-    const currentStats  = useMemo(() =>
-        statsList.find(s =>
-            selectedPeriod === 'all'
-                ? s.periodYear === null
-                : String(s.periodYear) === selectedPeriod
-        ) || null,
-        [statsList, selectedPeriod]
+    // Период сбрасываем при изменении типов, если текущий период недоступен
+    const periodOptions = useMemo(
+        () => buildPeriodOptionsFromByType(statsByType, selectedTypes),
+        [statsByType, selectedTypes]
     );
-    const periodOptions = useMemo(() => buildPeriodOptions(statsList), [statsList]);
+
+    useEffect(() => {
+        if (periodOptions.length > 0) {
+            const exists = periodOptions.some(o => o.value === selectedPeriod);
+            if (!exists) setSelectedPeriod(periodOptions[0].value);
+        }
+    }, [periodOptions]); // eslint-disable-line
+
+    // Агрегированная статистика для текущего фильтра
+    const currentStats = useMemo(
+        () => aggregateStatsByType(statsByType, selectedTypes, selectedPeriod),
+        [statsByType, selectedTypes, selectedPeriod]
+    );
+
+    const allSelected  = selectedTypes.length === TOURNAMENT_TYPES.length;
+    const filterActive = !allSelected;
+
+    const toggleType = (type) => {
+        setSelectedTypes(prev => {
+            if (prev.includes(type)) {
+                if (prev.length === 1) return prev; // не снимаем последний
+                return prev.filter(t => t !== type);
+            }
+            return [...prev, type];
+        });
+    };
 
     if (loading) return <Center py="xl" mt="xl"><Loader color="brandRed" size="lg" /></Center>;
 
@@ -131,9 +237,7 @@ export default function PlayerProfilePage() {
                 <Group align="flex-start" wrap="nowrap">
                     <Avatar
                         src={player.avatarUrl}
-                        w={100}
-                        h={100}
-                        radius="50%"
+                        w={100} h={100} radius="50%"
                         color="brandRed"
                         style={{ flexShrink: 0 }}
                     >
@@ -166,7 +270,7 @@ export default function PlayerProfilePage() {
                 </Group>
             </Paper>
 
-            {/* ── Табы: Статистика / Турниры ────────────────────────────────── */}
+            {/* ── Табы ─────────────────────────────────────────────────────── */}
             <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
                 <Tabs.List mb="xl">
                     <Tabs.Tab value="stats" leftSection={<IconChartBar size={16} />}>
@@ -179,15 +283,107 @@ export default function PlayerProfilePage() {
 
                 {/* ── Вкладка: Статистика ───────────────────────────────────── */}
                 <Tabs.Panel value="stats">
-                    {periodOptions.length > 1 && (
-                        <Select
-                            label="Период статистики"
-                            data={periodOptions}
-                            value={selectedPeriod}
-                            onChange={v => setSelectedPeriod(v ?? 'all')}
-                            mb="xl"
-                            style={{ maxWidth: 200 }}
-                        />
+                    {/* Строка управления: фильтр типов + период */}
+                    <Group mb="xl" justify="space-between" wrap="wrap" gap="xs" align="flex-end">
+
+                        {/* Фильтр по типу турнира */}
+                        <Popover
+                            opened={filterOpen}
+                            onChange={setFilterOpen}
+                            position="bottom-start"
+                            withArrow
+                            shadow="md"
+                        >
+                            <Popover.Target>
+                                <Button
+                                    variant={filterActive ? 'filled' : 'default'}
+                                    color={filterActive ? 'brandRed' : 'gray'}
+                                    leftSection={<IconFilter size={16} />}
+                                    size="sm"
+                                    onClick={() => setFilterOpen(o => !o)}
+                                >
+                                    {filterActive
+                                        ? selectedTypes.map(t => TYPE_CONFIG[t]?.label).join(', ')
+                                        : 'Все типы турниров'}
+                                </Button>
+                            </Popover.Target>
+                            <Popover.Dropdown>
+                                <Stack gap="sm" p="xs" style={{ minWidth: 200 }}>
+                                    <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+                                        Типы турниров
+                                    </Text>
+                                    {TOURNAMENT_TYPES.map(type => {
+                                        const cfg   = TYPE_CONFIG[type];
+                                        const count = statsByType.filter(s => s.tournamentType === type && s.periodYear === null).reduce((a, s) => a + (s.totalGames || 0), 0);
+                                        return (
+                                            <Checkbox
+                                                key={type}
+                                                label={
+                                                    <Group gap="xs">
+                                                        <Badge size="xs" color={cfg.color} variant="light">
+                                                            {cfg.label}
+                                                        </Badge>
+                                                        <Text size="xs" c="dimmed">{count} игр</Text>
+                                                    </Group>
+                                                }
+                                                checked={selectedTypes.includes(type)}
+                                                onChange={() => toggleType(type)}
+                                                color={cfg.color}
+                                            />
+                                        );
+                                    })}
+                                    {!allSelected && (
+                                        <Button
+                                            size="xs" variant="subtle" color="gray"
+                                            onClick={() => setSelectedTypes([...TOURNAMENT_TYPES])}
+                                        >
+                                            Сбросить фильтр
+                                        </Button>
+                                    )}
+                                </Stack>
+                            </Popover.Dropdown>
+                        </Popover>
+
+                        {/* Период */}
+                        {periodOptions.length > 1 ? (
+                            <Select
+                                label="Период"
+                                data={periodOptions}
+                                value={selectedPeriod}
+                                onChange={v => setSelectedPeriod(v ?? 'all')}
+                                style={{ width: 180 }}
+                                size="sm"
+                            />
+                        ) : <Box />}
+                    </Group>
+
+                    {/* Активные бейджи фильтра */}
+                    {filterActive && (
+                        <Group gap="xs" mb="md">
+                            <Text size="xs" c="dimmed">Показано:</Text>
+                            {selectedTypes.map(t => (
+                                <Badge
+                                    key={t}
+                                    size="sm"
+                                    color={TYPE_CONFIG[t]?.color}
+                                    variant="light"
+                                    rightSection={
+                                        selectedTypes.length > 1 ? (
+                                            <ActionIcon
+                                                size={10}
+                                                variant="transparent"
+                                                color={TYPE_CONFIG[t]?.color}
+                                                onClick={() => toggleType(t)}
+                                            >
+                                                ×
+                                            </ActionIcon>
+                                        ) : null
+                                    }
+                                >
+                                    {TYPE_CONFIG[t]?.label}
+                                </Badge>
+                            ))}
+                        </Group>
                     )}
 
                     {currentStats ? (
@@ -195,7 +391,7 @@ export default function PlayerProfilePage() {
                     ) : (
                         <Paper withBorder p="xl" ta="center" bg="transparent"
                                style={{ borderStyle: 'dashed' }}>
-                            <Text c="dimmed">Нет данных за выбранный период</Text>
+                            <Text c="dimmed">Нет данных за выбранный период и тип турнира</Text>
                         </Paper>
                     )}
                 </Tabs.Panel>
@@ -212,6 +408,9 @@ export default function PlayerProfilePage() {
 // ── StatsSection ─────────────────────────────────────────────────────────────
 
 function StatsSection({ stats, c }) {
+    const totalWins = (stats.winsCivilian || 0) + (stats.winsSheriff || 0)
+        + (stats.winsMafia    || 0) + (stats.winsDon    || 0);
+
     return (
         <Stack gap="xl">
             <section>
@@ -228,13 +427,8 @@ function StatsSection({ stats, c }) {
                     <Grid.Col span={{ base: 6, sm: 3 }}>
                         <StatCard
                             c={c} color="green"
-                            value={`${pct(
-                                stats.winsDon + stats.winsSheriff
-                                + stats.winsMafia + stats.winsCivilian,
-                                stats.totalGames
-                            )}%`}
-                            subValue={`${stats.winsDon + stats.winsSheriff
-                                + stats.winsMafia + stats.winsCivilian} побед`}
+                            value={`${pct(totalWins, stats.totalGames)}%`}
+                            subValue={`${totalWins} побед`}
                             label="Общий Win Rate"
                         />
                     </Grid.Col>
@@ -262,9 +456,9 @@ function StatsSection({ stats, c }) {
                 <Title order={4} mb="md">Win Rate по ролям</Title>
                 <Grid>
                     {Object.entries(ROLE_CONFIG).map(([role, cfg]) => {
-                        const cap    = role.charAt(0).toUpperCase() + role.slice(1);
-                        const games  = stats[`games${cap}`] ?? 0;
-                        const wins   = stats[`wins${cap}`]  ?? 0;
+                        const cap     = role.charAt(0).toUpperCase() + role.slice(1);
+                        const games   = stats[`games${cap}`] ?? 0;
+                        const wins    = stats[`wins${cap}`]  ?? 0;
                         const winRate = pct(wins, games);
                         return (
                             <Grid.Col key={role} span={{ base: 6, sm: 3 }}>
@@ -275,7 +469,6 @@ function StatsSection({ stats, c }) {
                                     wins={wins}
                                     games={games}
                                     label={cfg.label}
-                                    /*isMain={role === 'civilian'}*/
                                 />
                             </Grid.Col>
                         );
@@ -306,7 +499,7 @@ function StatCard({ c, color, value, subValue, label }) {
 
 // ── Карточка win rate ─────────────────────────────────────────────────────────
 
-function WinRateCard({ c, color, winRate, wins, games, label, isMain }) {
+function WinRateCard({ c, color, winRate, wins, games, label }) {
     return (
         <Paper
             p="md" radius="md" withBorder h="100%"
@@ -319,14 +512,10 @@ function WinRateCard({ c, color, winRate, wins, games, label, isMain }) {
             <Tooltip label={`${wins} побед из ${games} игр`} withArrow>
                 <div>
                     <RingProgress
-                        size={isMain ? 90 : 72}
-                        thickness={isMain ? 8 : 6}
-                        roundCaps
+                        size={72} thickness={6} roundCaps
                         sections={[{ value: winRate, color }]}
                         label={
-                            <Text ta="center" fw={700} size={isMain ? 'md' : 'sm'}>
-                                {winRate}%
-                            </Text>
+                            <Text ta="center" fw={700} size="sm">{winRate}%</Text>
                         }
                     />
                 </div>

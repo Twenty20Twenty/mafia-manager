@@ -66,7 +66,7 @@ export default function TournamentHeader({
                         c="dimmed"
                         mt="sm"
                         size="md"
-                        style={{ maxWidth: 800 }}
+                        style={{ maxWidth: 800, whiteSpace: 'pre-wrap' }}
                     >
                         {tournament.description || 'Описание отсутствует'}
                     </Text>

@@ -1,11 +1,13 @@
 // src/pages/tournaments/TournamentsPage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Container, Title, Group, Text, Select, TextInput, Stack, Center, Loader, Box } from '@mantine/core';
+import { Container, Title, Group, Text, Select, TextInput, Stack, Center, Loader, Box, Pagination } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import api from '../../api/axios';
 import TournamentCard from './components/TournamentCard';
 import { DEBOUNCE_MS } from './constants/tournamentConstants';
 import { sortTournaments } from './utils/tournamentSortUtils';
+
+const PAGE_SIZE = 10;
 
 export default function TournamentsPage() {
     const [search, setSearch]             = useState('');
@@ -13,6 +15,7 @@ export default function TournamentsPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [tournaments, setTournaments]   = useState([]);
     const [loading, setLoading]           = useState(true);
+    const [activePage, setActivePage]     = useState(1);
 
     const debounceRef = useRef(null);
 
@@ -25,8 +28,8 @@ export default function TournamentsPage() {
             if (searchValue?.trim())        params.search = searchValue.trim();
 
             const res = await api.get('/tournaments', { params });
-            // Сортируем на клиенте: новые первее, завершённые/архивные в конец
             setTournaments(sortTournaments(res.data));
+            setActivePage(1);
         } catch (error) {
             console.error('Ошибка загрузки турниров', error);
         } finally {
@@ -36,7 +39,7 @@ export default function TournamentsPage() {
 
     useEffect(() => {
         fetchTournaments(search, typeFilter, statusFilter);
-    }, [typeFilter, statusFilter]);
+    }, [typeFilter, statusFilter]); // eslint-disable-line
 
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -44,7 +47,10 @@ export default function TournamentsPage() {
             fetchTournaments(search, typeFilter, statusFilter);
         }, DEBOUNCE_MS);
         return () => clearTimeout(debounceRef.current);
-    }, [search]);
+    }, [search]); // eslint-disable-line
+
+    const totalPages = Math.ceil(tournaments.length / PAGE_SIZE);
+    const paginated  = tournaments.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE);
 
     return (
         <Container size="xl" py="xl">
@@ -77,7 +83,7 @@ export default function TournamentsPage() {
             </Group>
 
             {/* Мобилка */}
-            <Box hiddenFrom="sm" mb="md" mx= '-20px'>
+            <Box hiddenFrom="sm" mb="md" mx="-20px">
                 <Stack gap="xs">
                     <TextInput
                         placeholder="Поиск по названию..."
@@ -110,8 +116,20 @@ export default function TournamentsPage() {
                         <Text c="dimmed" ta="center" py="xl">Турниры не найдены</Text>
                     ) : (
                         <Stack gap="md">
-                            {tournaments.map(tour => <TournamentCard key={tour.id} tour={tour} />)}
+                            {paginated.map(tour => <TournamentCard key={tour.id} tour={tour} />)}
                         </Stack>
+                    )}
+
+                    {totalPages > 1 && (
+                        <Center mt="xl">
+                            <Pagination
+                                total={totalPages}
+                                value={activePage}
+                                onChange={setActivePage}
+                                color="brandRed"
+                                size={{ base: 'sm', sm: 'md' }}
+                            />
+                        </Center>
                     )}
                 </Box>
             )}

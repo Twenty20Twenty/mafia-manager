@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import {
     ActionIcon, Avatar, Badge, Button, Container, Grid, Group, Paper, Stack,
-    Tabs, Text, TextInput, ThemeIcon, Title, Tooltip, Center, Loader, Box
+    Tabs, Text, TextInput, ThemeIcon, Title, Tooltip, Center, Loader, Box, Pagination
 } from '@mantine/core';
 import {
     IconArrowLeft, IconBan, IconBrandVk, IconCalendar, IconCheck, IconCrown,
@@ -17,6 +17,24 @@ import { TOURNAMENT_STATUSES, TOURNAMENT_TYPES } from '../tournaments/constants/
 import { notifications } from '@mantine/notifications';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
+const TOURS_PAGE_SIZE = 8;
+const FINISHED_STATUSES = new Set(['completed', 'archived']);
+
+function sortTournamentsForClub(tours) {
+    return [...tours].sort((a, b) => {
+        const aFinished = FINISHED_STATUSES.has(a.status) ? 1 : 0;
+        const bFinished = FINISHED_STATUSES.has(b.status) ? 1 : 0;
+        if (aFinished !== bFinished) return aFinished - bFinished;
+        // внутри группы — новые первее
+        const dateA = a.startDate ? new Date(a.startDate) : null;
+        const dateB = b.startDate ? new Date(b.startDate) : null;
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB - dateA;
+    });
+}
+
 export default function ClubProfilePage() {
     const { id } = useParams();
     const { user, refreshUser } = useAuth();
@@ -29,12 +47,8 @@ export default function ClubProfilePage() {
     const [loading, setLoading]                 = useState(true);
     const [memberSearch, setMemberSearch]       = useState('');
     const [joinLoading, setJoinLoading]         = useState(false);
+    const [toursPage, setToursPage]             = useState(1);
 
-    /**
-     * Статус заявки текущего пользователя:
-     * - null  — ещё не загружен
-     * - { hasPendingRequestForThisClub, hasPendingRequestForOtherClub, pendingClubId }
-     */
     const [requestStatus, setRequestStatus] = useState(null);
 
     const clubId = Number(id);
@@ -46,7 +60,6 @@ export default function ClubProfilePage() {
             const res = await api.get(`/clubs/${clubId}/my-request-status`);
             setRequestStatus(res.data);
         } catch (err) {
-            // Если 401 — просто не показываем статус
             console.warn('Не удалось получить статус заявки', err);
             setRequestStatus(null);
         }
@@ -60,7 +73,7 @@ export default function ClubProfilePage() {
                 api.get(`/tournaments?clubId=${clubId}`)
             ]);
             setClub(clubRes.data);
-            setClubTournaments(toursRes.data);
+            setClubTournaments(sortTournamentsForClub(toursRes.data));
 
             if (user && user.id === clubRes.data.presidentId) {
                 const reqsRes = await api.get(`/clubs/${clubId}/requests`);
@@ -87,7 +100,6 @@ export default function ClubProfilePage() {
         try {
             await api.post(`/clubs/${clubId}/join`);
             notifications.show({ color: 'green', title: 'Успех', message: 'Заявка отправлена!' });
-            // Перезагружаем статус заявки и данные страницы
             await Promise.all([fetchData(), fetchRequestStatus()]);
         } catch (error) {
             notifications.show({
@@ -183,22 +195,22 @@ export default function ClubProfilePage() {
     const hasPersonalRight     = currentUserMemberObj?.canCreateTournaments;
     const canCreateTournament  = isMember && isClubOperator && (isPresident || hasPersonalRight);
 
-    // Флаги заявок из нового endpoint
     const hasPendingRequestForThisClub  = requestStatus?.hasPendingRequestForThisClub  ?? false;
     const hasPendingRequestForOtherClub = requestStatus?.hasPendingRequestForOtherClub ?? false;
 
-    /**
-     * Кнопка "Вступить" видна если:
-     * - пользователь авторизован
-     * - не состоит в клубе (нет club_id) и не является президентом
-     * - нет заявки ни в этот, ни в другой клуб
-     */
     const canJoin = isUserLoggedIn
         && !isMember
         && !isPresident
         && !hasPendingRequestForThisClub
         && !hasPendingRequestForOtherClub
         && !user?.clubId;
+
+    // ── Пагинация турниров ───────────────────────────────────────────────────
+    const toursTotalPages = Math.ceil(clubTournaments.length / TOURS_PAGE_SIZE);
+    const paginatedTours  = clubTournaments.slice(
+        (toursPage - 1) * TOURS_PAGE_SIZE,
+        toursPage * TOURS_PAGE_SIZE
+    );
 
     return (
         <Container size="lg" py="xl">
@@ -215,343 +227,365 @@ export default function ClubProfilePage() {
                 )}
             </Group>
 
-            {/* ── Шапка клуба ─────────────────────────────────────────────── */}
-            <Paper withBorder radius="md" p={{ base: 'md', sm: 'xl' }} mb="xl"
-                   style={{ backgroundColor: c.surface2 }}>
-                <Grid gutter="xl" align="flex-start">
-                    <Grid.Col span={{ base: 12, md: 8 }}>
-                        <Group align="flex-start" wrap="nowrap" gap={{ base: 'sm', sm: 'md' }}>
-                            <Avatar
-                                src={club.logoUrl}
-                                w={150}
-                                h={150}
-                                radius="50%"
-                                style={{ flexShrink: 0 }}
-                            />
-                            <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                                <Group wrap="wrap" gap="xs">
-                                    <Title order={1} size={{ base: 'h2', sm: 'h1' }}>{club.name}</Title>
-                                    {isClubOperator && (
-                                        <Tooltip label="Клуб имеет лицензию на проведение турниров">
-                                            <Badge color="teal" variant="light" size="md"
-                                                   leftSection={<IconTrophy size={14} />}>
-                                                Турнирный оператор
-                                            </Badge>
-                                        </Tooltip>
-                                    )}
-                                </Group>
-                                <Group gap={5} c="dimmed">
-                                    <IconMapPin size={16} />
-                                    <Text size="sm">{club.city || 'Не указан'}</Text>
-                                </Group>
-                                <Text size="sm" mt={4}>{club.description}</Text>
+            <Box mx={{ base: '-30px', sm: 0 }}>
+                {/* ── Шапка клуба ─────────────────────────────────────────────── */}
+                <Paper withBorder radius={{ base: 0, sm: 'md' }}
+                       p={{ base: 'sm', sm: 'xl' }} mb="xl"
+                       style={{ backgroundColor: c.surface2 }}>
+                    <Grid gutter={{ base: 'sm', sm: 'xl' }} align="flex-start">
 
-                                <Group mt="xs" wrap="wrap" gap="xs">
-                                    {club.socialLink && (
-                                        <Button
-                                            component="a"
-                                            href={club.socialLink.startsWith('http')
-                                                ? club.socialLink : `https://${club.socialLink}`}
-                                            target="_blank"
-                                            leftSection={<IconBrandVk size={18} />}
-                                            variant="default" size="xs"
-                                        >
-                                            Мы ВКонтакте
-                                        </Button>
-                                    )}
+                        {/* Основная информация + Президент в одну строку */}
+                        <Grid.Col span={{ base: 12, md: 8 }} order={1}>
+                            <Group align="flex-start" wrap="nowrap" gap={{ base: 'sm', sm: 'md' }}>
+                                <Avatar
+                                    src={club.logoUrl}
+                                    w={{ base: 72, sm: 120, md: 150 }}
+                                    h={{ base: 72, sm: 120, md: 150 }}
+                                    radius="50%"
+                                    style={{ flexShrink: 0 }}
+                                />
+                                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                                    <Group wrap="wrap" gap="xs" align="center">
+                                        <Title order={1} size={{ base: 'h3', sm: 'h2', md: 'h1' }}
+                                               style={{ lineHeight: 1.2 }}>
+                                            {club.name}
+                                        </Title>
+                                        {isClubOperator && (
+                                            <Tooltip label="Клуб имеет лицензию на проведение турниров">
+                                                <Badge color="teal" variant="light"
+                                                       size={{ base: 'sm', sm: 'md' }}
+                                                       leftSection={<IconTrophy size={12} />}>
+                                                    Турнирный оператор
+                                                </Badge>
+                                            </Tooltip>
+                                        )}
+                                    </Group>
+                                    <Group gap={4} c="dimmed">
+                                        <IconMapPin size={14} />
+                                        <Text size="sm">{club.city || 'Не указан'}</Text>
+                                    </Group>
+                                </Stack>
+                            </Group>
+                        </Grid.Col>
 
-                                    {isUserLoggedIn && (
-                                        <>
-                                            {/* Покинуть клуб */}
-                                            {isMember && !isPresident && (
-                                                <Button color="red" variant="subtle" size="xs"
-                                                        leftSection={<IconDoorExit size={16} />}
-                                                        onClick={handleLeaveClub}>
-                                                    Покинуть клуб
-                                                </Button>
-                                            )}
+                        {/* Президент — справа на десктопе, сверху на мобиле */}
+                        <Grid.Col span={{ base: 12, md: 4 }} order={{ base: 2, md: 1 }}>
+                            <Paper withBorder p="md" radius="md"
+                                   style={{ backgroundColor: c.surface3 }}>
+                                <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb="xs">
+                                    Президент клуба
+                                </Text>
+                                {club.presidentId ? (
+                                    <Group component={Link} to={`/players/${club.presidentId}`}
+                                           style={{ textDecoration: 'none', cursor: 'pointer' }}
+                                           wrap="nowrap">
+                                        <Avatar src={president?.avatarUrl} size="lg" radius="xl"
+                                                color="brandRed" />
+                                        <div>
+                                            <Group gap={5}>
+                                                <Text fw={700} size="lg">{club.presidentName}</Text>
+                                                <IconCrown size={16} color="gold" fill="gold" />
+                                            </Group>
+                                            <Text size="xs" c="dimmed">Перейти в профиль</Text>
+                                        </div>
+                                    </Group>
+                                ) : (
+                                    <Text c="dimmed">Не назначен</Text>
+                                )}
+                            </Paper>
+                        </Grid.Col>
 
-                                            {/* Кнопка вступления */}
-                                            {canJoin && (
-                                                <Button color="brandRed" variant="filled" size="xs"
-                                                        leftSection={<IconPlus size={16} />}
-                                                        loading={joinLoading}
-                                                        onClick={handleJoinRequest}>
-                                                    Вступить в клуб
-                                                </Button>
-                                            )}
+                        {/* Описание */}
+                        <Grid.Col span={12} order={3} pt={0}>
+                            <Text size="sm" c="dimmed">{club.description}</Text>
+                        </Grid.Col>
 
-                                            {/* Заявка отправлена в ЭТОТ клуб */}
-                                            {hasPendingRequestForThisClub && !isMember && (
-                                                <Button color="yellow" variant="light" size="xs"
-                                                        leftSection={<IconClock size={16} />}
-                                                        disabled>
-                                                    Заявка отправлена
-                                                </Button>
-                                            )}
-
-                                            {/* Заявка в ДРУГОЙ клуб — кнопки нет совсем */}
-
-                                            {/* Создать турнир */}
-                                            {canCreateTournament && (
-                                                <Button component={Link} to="/create-tournament"
-                                                        variant="gradient"
-                                                        gradient={{ from: 'orange', to: 'red' }}
-                                                        size="xs"
-                                                        leftSection={<IconTrophy size={16} />}>
-                                                    Создать турнир
-                                                </Button>
-                                            )}
-                                        </>
-                                    )}
-                                </Group>
-                            </Stack>
-                        </Group>
-                    </Grid.Col>
-
-                    {/* Президент */}
-                    <Grid.Col span={{ base: 12, md: 4 }}>
-                        <Paper withBorder p="md" radius="md" style={{ backgroundColor: c.surface3 }}>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb="xs">
-                                Президент клуба
-                            </Text>
-                            {club.presidentId ? (
-                                <Group component={Link} to={`/players/${club.presidentId}`}
-                                       style={{ textDecoration: 'none', cursor: 'pointer' }}
-                                       wrap="nowrap">
-                                    <Avatar src={president?.avatarUrl} size="lg" radius="xl"
-                                            color="brandRed" />
-                                    <div>
-                                        <Group gap={5}>
-                                            <Text fw={700} size="lg">{club.presidentName}</Text>
-                                            <IconCrown size={16} color="gold" fill="gold" />
-                                        </Group>
-                                        <Text size="xs" c="dimmed">Перейти в профиль</Text>
-                                    </div>
-                                </Group>
-                            ) : (
-                                <Text c="dimmed">Не назначен</Text>
-                            )}
-                        </Paper>
-                    </Grid.Col>
-                </Grid>
-            </Paper>
-
-            {/* ── Табы ────────────────────────────────────────────────────── */}
-            <Tabs defaultValue="members" variant="outline" radius="md">
-                <Tabs.List mb="md" grow justify="flex-start">
-                    <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>
-                            Участники ({club.members?.length || 0})
-                        </Box>
-                    </Tabs.Tab>
-                    <Tabs.Tab value="tournaments" leftSection={<IconTrophy size={16} />}>
-                        <Box style={{ textAlign: 'left' }}>Турниры</Box>
-                    </Tabs.Tab>
-                    {isPresident && (
-                        <Tabs.Tab value="applications" leftSection={<IconUserPlus size={16} />}
-                                  color={applications.length > 0 ? 'red' : 'gray'}>
-                            <Group gap={5} justify="flex-start" style={{ width: '100%' }}>
-                                <Text size="sm">Заявки</Text>
-                                {applications.length > 0 && (
-                                    <Badge size="xs" circle color="red">{applications.length}</Badge>
+                        {/* Кнопки действий */}
+                        <Grid.Col span={12} order={4}>
+                            <Group wrap="wrap" gap="xs">
+                                {club.socialLink && (
+                                    <Button
+                                        component="a"
+                                        href={club.socialLink.startsWith('http')
+                                            ? club.socialLink : `https://${club.socialLink}`}
+                                        target="_blank"
+                                        leftSection={<IconBrandVk size={18} />}
+                                        variant="default" size="xs"
+                                    >
+                                        Мы ВКонтакте
+                                    </Button>
+                                )}
+                                {isUserLoggedIn && (
+                                    <>
+                                        {isMember && !isPresident && (
+                                            <Button color="red" variant="subtle" size="xs"
+                                                    leftSection={<IconDoorExit size={16} />}
+                                                    onClick={handleLeaveClub}>
+                                                Покинуть клуб
+                                            </Button>
+                                        )}
+                                        {canJoin && (
+                                            <Button color="brandRed" variant="filled" size="xs"
+                                                    leftSection={<IconPlus size={16} />}
+                                                    loading={joinLoading}
+                                                    onClick={handleJoinRequest}>
+                                                Вступить в клуб
+                                            </Button>
+                                        )}
+                                        {hasPendingRequestForThisClub && !isMember && (
+                                            <Button color="yellow" variant="light" size="xs"
+                                                    leftSection={<IconClock size={16} />}
+                                                    disabled>
+                                                Заявка отправлена
+                                            </Button>
+                                        )}
+                                        {canCreateTournament && (
+                                            <Button component={Link} to="/create-tournament"
+                                                    variant="gradient"
+                                                    gradient={{ from: 'orange', to: 'red' }}
+                                                    size="xs"
+                                                    leftSection={<IconTrophy size={16} />}>
+                                                Создать турнир
+                                            </Button>
+                                        )}
+                                    </>
                                 )}
                             </Group>
+                        </Grid.Col>
+                    </Grid>
+                </Paper>
+
+                {/* ── Табы ────────────────────────────────────────────────────── */}
+                <Tabs defaultValue="members" variant="outline" radius="md">
+                    <Tabs.List mb="md" grow justify="flex-start">
+                        <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>
+                                Участники ({club.members?.length || 0})
+                            </Box>
                         </Tabs.Tab>
-                    )}
-                </Tabs.List>
-
-                {/* ── Участники ─────────────────────────────────────────── */}
-                <Tabs.Panel value="members">
-                    <Stack gap="sm">
-                        <TextInput
-                            placeholder="Поиск участника..."
-                            leftSection={<IconSearch size={14} />}
-                            size="sm" value={memberSearch}
-                            onChange={e => setMemberSearch(e.currentTarget.value)}
-                            mb="sm"
-                        />
-                        {members.length > 0 ? (
-                            members.map(member => (
-                                <Paper key={member.id} withBorder p="sm" radius="sm"
-                                       style={{ backgroundColor: c.surface2 }}>
-                                    <Group justify="space-between" wrap="nowrap">
-                                        <Group
-                                            component={Link} to={`/players/${member.id}`}
-                                            style={{
-                                                textDecoration: 'none', color: 'inherit',
-                                                cursor: 'pointer', minWidth: 0
-                                            }}
-                                            wrap="nowrap"
-                                        >
-                                            <Avatar src={member.avatarUrl} size="sm" radius="xl"
-                                                    style={{ flexShrink: 0 }} />
-                                            <Text fw={500} truncate>{member.nickname}</Text>
-                                            {member.id === club.presidentId && (
-                                                <IconCrown size={14} color="gold" fill="gold"
-                                                           style={{ flexShrink: 0 }} />
-                                            )}
-                                            {member.canCreateTournaments && (
-                                                <Tooltip label="Может создавать турниры от лица клуба">
-                                                    <Badge size="sm" variant="light" color="orange"
-                                                           circle
-                                                           style={{
-                                                               width: 24, height: 24, padding: 0,
-                                                               display: 'flex', justifyContent: 'center',
-                                                               flexShrink: 0
-                                                           }}>
-                                                        <IconTrophy size={14} />
-                                                    </Badge>
-                                                </Tooltip>
-                                            )}
-                                        </Group>
-                                        <Group gap="xs" style={{ flexShrink: 0 }}>
-                                            {isPresident && member.id !== user.id && (
-                                                <>
-                                                    {isClubOperator && (
-                                                        <Tooltip label={member.canCreateTournaments
-                                                            ? 'Забрать право' : 'Выдать право'}>
-                                                            <ActionIcon
-                                                                variant="light"
-                                                                color={member.canCreateTournaments
-                                                                    ? 'orange' : 'gray'}
-                                                                size="md" radius="xl"
-                                                                onClick={() => handleToggleTournamentRights(
-                                                                    member.id, member.canCreateTournaments
-                                                                )}
-                                                            >
-                                                                {member.canCreateTournaments
-                                                                    ? <IconTrophyOff size={16} />
-                                                                    : <IconTrophy size={16} />}
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                    )}
-                                                    <Tooltip label="Исключить из клуба">
-                                                        <ActionIcon variant="light" color="red"
-                                                                    size="md" radius="xl"
-                                                                    onClick={() => handleKickMember(
-                                                                        member.id, member.nickname
-                                                                    )}>
-                                                            <IconBan size={16} />
-                                                        </ActionIcon>
-                                                    </Tooltip>
-                                                </>
-                                            )}
-                                        </Group>
-                                    </Group>
-                                </Paper>
-                            ))
-                        ) : (
-                            <Text c="dimmed" ta="center" py="xl">Участники не найдены</Text>
+                        <Tabs.Tab value="tournaments" leftSection={<IconTrophy size={16} />}>
+                            <Box style={{ textAlign: 'left' }}>Турниры</Box>
+                        </Tabs.Tab>
+                        {isPresident && (
+                            <Tabs.Tab value="applications" leftSection={<IconUserPlus size={16} />}
+                                      color={applications.length > 0 ? 'red' : 'gray'}>
+                                <Group gap={5} justify="flex-start" style={{ width: '100%' }}>
+                                    <Text size="sm">Заявки</Text>
+                                    {applications.length > 0 && (
+                                        <Badge size="xs" circle color="red">{applications.length}</Badge>
+                                    )}
+                                </Group>
+                            </Tabs.Tab>
                         )}
-                    </Stack>
-                </Tabs.Panel>
+                    </Tabs.List>
 
-                {/* ── Турниры ───────────────────────────────────────────── */}
-                <Tabs.Panel value="tournaments">
-                    <Stack gap="md" mt="md">
-                        {clubTournaments.length > 0 ? (
-                            clubTournaments.map(tour => {
-                                const typeInfo   = TOURNAMENT_TYPES[tour.type]      || { color: 'gray', label: 'Турнир' };
-                                const statusInfo = tour.status ? TOURNAMENT_STATUSES[tour.status] : null;
-                                const dateRange  = tour.startDate && tour.endDate
-                                    ? tour.startDate === tour.endDate
-                                        ? dayjs(tour.startDate).format('D MMM YYYY')
-                                        : `${dayjs(tour.startDate).format('D MMM')} - ${dayjs(tour.endDate).format('D MMM YYYY')}`
-                                    : 'Даты не указаны';
-                                return (
-                                    <Paper key={tour.id} component={Link}
-                                           to={`/tournaments/${tour.id}`}
-                                           withBorder p="md" radius="md"
-                                           style={{
-                                               textDecoration: 'none', color: 'inherit',
-                                               backgroundColor: c.surface3
-                                           }}>
-                                        <Group justify="space-between" wrap="nowrap">
-                                            <Group wrap="nowrap" style={{ minWidth: 0 }}>
-                                                <ThemeIcon size="lg" color={typeInfo.color}
-                                                           variant="light" style={{ flexShrink: 0 }}>
-                                                    <IconTrophy size={20} />
-                                                </ThemeIcon>
-                                                <div style={{ minWidth: 0 }}>
-                                                    <Text fw={700} truncate>{tour.title}</Text>
-                                                    <Group gap={5} c="dimmed">
-                                                        <IconCalendar size={14} />
-                                                        <Text size="xs">{dateRange}</Text>
-                                                    </Group>
-                                                </div>
-                                            </Group>
-                                            {statusInfo && (
-                                                <Badge color={statusInfo.color} style={{ flexShrink: 0 }}>
-                                                    {statusInfo.label}
-                                                </Badge>
-                                            )}
-                                        </Group>
-                                    </Paper>
-                                );
-                            })
-                        ) : (
-                            <Paper withBorder p={50} ta="center" bg="transparent"
-                                   style={{ borderStyle: 'dashed' }}>
-                                <Text c="dimmed">В этом клубе пока не проводились турниры.</Text>
-                            </Paper>
-                        )}
-                    </Stack>
-                </Tabs.Panel>
-
-                {/* ── Заявки ────────────────────────────────────────────── */}
-                {isPresident && (
-                    <Tabs.Panel value="applications">
-                        <Stack gap="sm" mt="md">
-                            {applications.length > 0 ? (
-                                applications.map(app => (
-                                    <Paper key={app.id} withBorder p="sm" radius="sm"
+                    {/* ── Участники ─────────────────────────────────────────── */}
+                    <Tabs.Panel value="members">
+                        <Stack gap="sm">
+                            <TextInput
+                                placeholder="Поиск участника..."
+                                leftSection={<IconSearch size={14} />}
+                                size="sm" value={memberSearch}
+                                onChange={e => setMemberSearch(e.currentTarget.value)}
+                                mb="sm"
+                            />
+                            {members.length > 0 ? (
+                                members.map(member => (
+                                    <Paper key={member.id} withBorder p="sm" radius="sm"
                                            style={{ backgroundColor: c.surface2 }}>
                                         <Group justify="space-between" wrap="nowrap">
                                             <Group
-                                                component={Link} to={`/players/${app.id}`}
+                                                component={Link} to={`/players/${member.id}`}
                                                 style={{
                                                     textDecoration: 'none', color: 'inherit',
                                                     cursor: 'pointer', minWidth: 0
                                                 }}
                                                 wrap="nowrap"
                                             >
-                                                <Avatar src={app.avatarUrl} size="md" radius="xl"
+                                                <Avatar src={member.avatarUrl} size="sm" radius="xl"
                                                         style={{ flexShrink: 0 }} />
-                                                <div style={{ minWidth: 0 }}>
-                                                    <Text fw={700} truncate>{app.nickname}</Text>
-                                                    <Group gap={5} c="dimmed">
-                                                        <IconMapPin size={12} />
-                                                        <Text size="xs">{app.city || 'Не указан'}</Text>
-                                                    </Group>
-                                                </div>
+                                                <Text fw={500} truncate>{member.nickname}</Text>
+                                                {member.id === club.presidentId && (
+                                                    <IconCrown size={14} color="gold" fill="gold"
+                                                               style={{ flexShrink: 0 }} />
+                                                )}
+                                                {member.canCreateTournaments && (
+                                                    <Tooltip label="Может создавать турниры от лица клуба">
+                                                        <Badge size="sm" variant="light" color="orange"
+                                                               circle
+                                                               style={{
+                                                                   width: 24, height: 24, padding: 0,
+                                                                   display: 'flex', justifyContent: 'center',
+                                                                   flexShrink: 0
+                                                               }}>
+                                                            <IconTrophy size={14} />
+                                                        </Badge>
+                                                    </Tooltip>
+                                                )}
                                             </Group>
-                                            <Group gap="sm" style={{ flexShrink: 0 }}>
-                                                <Tooltip label="Отклонить">
-                                                    <ActionIcon variant="light" color="red"
-                                                                size="lg" radius="xl"
-                                                                onClick={() => handleApplication(app.id, false)}>
-                                                        <IconX size={18} />
-                                                    </ActionIcon>
-                                                </Tooltip>
-                                                <Tooltip label="Принять в клуб">
-                                                    <ActionIcon variant="filled" color="teal"
-                                                                size="lg" radius="xl"
-                                                                onClick={() => handleApplication(app.id, true)}>
-                                                        <IconCheck size={18} />
-                                                    </ActionIcon>
-                                                </Tooltip>
+                                            <Group gap="xs" style={{ flexShrink: 0 }}>
+                                                {isPresident && member.id !== user.id && (
+                                                    <>
+                                                        {isClubOperator && (
+                                                            <Tooltip label={member.canCreateTournaments
+                                                                ? 'Забрать право' : 'Выдать право'}>
+                                                                <ActionIcon
+                                                                    variant="light"
+                                                                    color={member.canCreateTournaments
+                                                                        ? 'orange' : 'gray'}
+                                                                    size="md" radius="xl"
+                                                                    onClick={() => handleToggleTournamentRights(
+                                                                        member.id, member.canCreateTournaments
+                                                                    )}
+                                                                >
+                                                                    {member.canCreateTournaments
+                                                                        ? <IconTrophyOff size={16} />
+                                                                        : <IconTrophy size={16} />}
+                                                                </ActionIcon>
+                                                            </Tooltip>
+                                                        )}
+                                                        <Tooltip label="Исключить из клуба">
+                                                            <ActionIcon variant="light" color="red"
+                                                                        size="md" radius="xl"
+                                                                        onClick={() => handleKickMember(
+                                                                            member.id, member.nickname
+                                                                        )}>
+                                                                <IconBan size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    </>
+                                                )}
                                             </Group>
                                         </Group>
                                     </Paper>
                                 ))
                             ) : (
-                                <Text c="dimmed" ta="center" py="xl">Новых заявок нет</Text>
+                                <Text c="dimmed" ta="center" py="xl">Участники не найдены</Text>
                             )}
                         </Stack>
                     </Tabs.Panel>
-                )}
-            </Tabs>
+
+                    {/* ── Турниры ───────────────────────────────────────────── */}
+                    <Tabs.Panel value="tournaments">
+                        <Stack gap="md" mt="md">
+                            {clubTournaments.length > 0 ? (
+                                <>
+                                    {paginatedTours.map(tour => {
+                                        const typeInfo   = TOURNAMENT_TYPES[tour.type]      || { color: 'gray', label: 'Турнир' };
+                                        const statusInfo = tour.status ? TOURNAMENT_STATUSES[tour.status] : null;
+                                        const dateRange  = tour.startDate && tour.endDate
+                                            ? tour.startDate === tour.endDate
+                                                ? dayjs(tour.startDate).format('D MMM YYYY')
+                                                : `${dayjs(tour.startDate).format('D MMM')} - ${dayjs(tour.endDate).format('D MMM YYYY')}`
+                                            : 'Даты не указаны';
+                                        return (
+                                            <Paper key={tour.id} component={Link}
+                                                   to={`/tournaments/${tour.id}`}
+                                                   withBorder p="md" radius="md"
+                                                   style={{
+                                                       textDecoration: 'none', color: 'inherit',
+                                                       backgroundColor: c.surface3
+                                                   }}>
+                                                <Group justify="space-between" wrap="nowrap">
+                                                    <Group wrap="nowrap" style={{ minWidth: 0 }}>
+                                                        <ThemeIcon size="lg" color={typeInfo.color}
+                                                                   variant="light" style={{ flexShrink: 0 }}>
+                                                            <IconTrophy size={20} />
+                                                        </ThemeIcon>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <Text fw={700} truncate>{tour.title}</Text>
+                                                            <Group gap={5} c="dimmed">
+                                                                <IconCalendar size={14} />
+                                                                <Text size="xs">{dateRange}</Text>
+                                                            </Group>
+                                                        </div>
+                                                    </Group>
+                                                    {statusInfo && (
+                                                        <Badge color={statusInfo.color} style={{ flexShrink: 0 }}>
+                                                            {statusInfo.label}
+                                                        </Badge>
+                                                    )}
+                                                </Group>
+                                            </Paper>
+                                        );
+                                    })}
+
+                                    {toursTotalPages > 1 && (
+                                        <Center mt="sm">
+                                            <Pagination
+                                                total={toursTotalPages}
+                                                value={toursPage}
+                                                onChange={setToursPage}
+                                                color="brandRed"
+                                                size="sm"
+                                            />
+                                        </Center>
+                                    )}
+                                </>
+                            ) : (
+                                <Paper withBorder p={50} ta="center" bg="transparent"
+                                       style={{ borderStyle: 'dashed' }}>
+                                    <Text c="dimmed">В этом клубе пока не проводились турниры.</Text>
+                                </Paper>
+                            )}
+                        </Stack>
+                    </Tabs.Panel>
+
+                    {/* ── Заявки ────────────────────────────────────────────── */}
+                    {isPresident && (
+                        <Tabs.Panel value="applications">
+                            <Stack gap="sm" mt="md">
+                                {applications.length > 0 ? (
+                                    applications.map(app => (
+                                        <Paper key={app.id} withBorder p="sm" radius="sm"
+                                               style={{ backgroundColor: c.surface2 }}>
+                                            <Group justify="space-between" wrap="nowrap">
+                                                <Group
+                                                    component={Link} to={`/players/${app.id}`}
+                                                    style={{
+                                                        textDecoration: 'none', color: 'inherit',
+                                                        cursor: 'pointer', minWidth: 0
+                                                    }}
+                                                    wrap="nowrap"
+                                                >
+                                                    <Avatar src={app.avatarUrl} size="md" radius="xl"
+                                                            style={{ flexShrink: 0 }} />
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <Text fw={700} truncate>{app.nickname}</Text>
+                                                        <Group gap={5} c="dimmed">
+                                                            <IconMapPin size={12} />
+                                                            <Text size="xs">{app.city || 'Не указан'}</Text>
+                                                        </Group>
+                                                    </div>
+                                                </Group>
+                                                <Group gap="sm" style={{ flexShrink: 0 }}>
+                                                    <Tooltip label="Отклонить">
+                                                        <ActionIcon variant="light" color="red"
+                                                                    size="lg" radius="xl"
+                                                                    onClick={() => handleApplication(app.id, false)}>
+                                                            <IconX size={18} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                    <Tooltip label="Принять в клуб">
+                                                        <ActionIcon variant="filled" color="teal"
+                                                                    size="lg" radius="xl"
+                                                                    onClick={() => handleApplication(app.id, true)}>
+                                                            <IconCheck size={18} />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                </Group>
+                                            </Group>
+                                        </Paper>
+                                    ))
+                                ) : (
+                                    <Text c="dimmed" ta="center" py="xl">Новых заявок нет</Text>
+                                )}
+                            </Stack>
+                        </Tabs.Panel>
+                    )}
+                </Tabs>
+
+            </Box>
         </Container>
     );
 }

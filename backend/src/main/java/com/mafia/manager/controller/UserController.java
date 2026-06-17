@@ -17,7 +17,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import com.mafia.manager.dto.PlayerStatsByTypeDto;
 import java.util.List;
 
 @RestController
@@ -118,5 +118,38 @@ public class UserController {
     ) {
         emailVerificationService.confirmEmailChange(id, request.getCode());
         return ResponseEntity.ok().build();
+    }
+
+
+    /**
+     * Статистика игрока в разрезе типов турниров.
+     *
+     * <p>Возвращает список записей вида: tournamentType × periodYear → stats.
+     * Клиент фильтрует на стороне JS (чекбоксы individual/team/season)
+     * и суммирует нужные записи.</p>
+     *
+     * <p>Пример ответа:
+     * <pre>
+     * [
+     *   { "tournamentType": "individual", "periodYear": null, "totalGames": 45, ... },
+     *   { "tournamentType": "individual", "periodYear": 2025, "totalGames": 12, ... },
+     *   { "tournamentType": "team",       "periodYear": null, "totalGames": 20, ... },
+     *   { "tournamentType": "season",     "periodYear": null, "totalGames": 88, ... }
+     * ]
+     * </pre>
+     * </p>
+     */
+    @Operation(
+            summary = "Статистика игрока по типу турниров",
+            description = """
+        Возвращает список записей: tournamentType × periodYear.
+        Фронтенд суммирует нужные типы согласно выбранным чекбоксам.
+        tournamentType: individual | team | season
+        periodYear: null = за всё время, число = за конкретный год
+        """
+    )
+    @GetMapping("/{id}/stats-by-type")
+    public ResponseEntity<List<PlayerStatsByTypeDto>> getUserStatsByType(@PathVariable Long id) {
+        return ResponseEntity.ok(playerStatsService.getStatsByType(id));
     }
 }

@@ -1,8 +1,8 @@
 // src/pages/players/components/PlayerTournamentsList.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Stack, Paper, Text, Group, Badge, Center, Loader,
-    ThemeIcon, Anchor
+    ThemeIcon, Pagination
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { IconTrophy, IconCalendar, IconMedal, IconUsers } from '@tabler/icons-react';
@@ -11,6 +11,10 @@ import { formatTournamentDates } from '../../tournaments/utils/tournamentDateUti
 import { useThemeColors } from '../../../hooks/useThemeColors';
 
 // ── Константы ────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 8;
+
+const FINISHED_STATUSES = new Set(['completed', 'archived']);
 
 const TYPE_CONFIG = {
     individual: { label: 'Личный',    color: 'blue'   },
@@ -24,6 +28,26 @@ const STATUS_CONFIG = {
     completed:    { label: 'Завершён',     color: 'gray'   },
     archived:     { label: 'Архив',        color: 'dark'   },
 };
+
+// ── Утилита сортировки ───────────────────────────────────────────────────────
+
+function sortTournaments(tours) {
+    return [...tours].sort((a, b) => {
+        const aFinished = FINISHED_STATUSES.has(a.status) ? 1 : 0;
+        const bFinished = FINISHED_STATUSES.has(b.status) ? 1 : 0;
+
+        // незавершённые выше завершённых
+        if (aFinished !== bFinished) return aFinished - bFinished;
+
+        // внутри группы — новые первее (по startDate убывающая)
+        const dateA = a.startDate ? new Date(a.startDate) : null;
+        const dateB = b.startDate ? new Date(b.startDate) : null;
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB - dateA;
+    });
+}
 
 // ── Вспомогательный компонент: строка места ───────────────────────────────────
 
@@ -110,20 +134,28 @@ export default function PlayerTournamentsList({ userId }) {
     const [tournaments, setTournaments] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [error, setError]             = useState(null);
+    const [activePage, setActivePage]   = useState(1);
 
     useEffect(() => {
         if (!userId) return;
         setLoading(true);
         setError(null);
+        setActivePage(1);
 
         getPlayerTournaments(userId)
-            .then(setTournaments)
+            .then(data => setTournaments(sortTournaments(data)))
             .catch(err => {
                 console.error('Ошибка загрузки турниров игрока', err);
                 setError('Не удалось загрузить турниры');
             })
             .finally(() => setLoading(false));
     }, [userId]);
+
+    const totalPages = Math.ceil(tournaments.length / PAGE_SIZE);
+    const paginated  = useMemo(
+        () => tournaments.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE),
+        [tournaments, activePage]
+    );
 
     if (loading) return <Center py="xl"><Loader color="brandRed" size="sm" /></Center>;
 
@@ -137,32 +169,22 @@ export default function PlayerTournamentsList({ userId }) {
         </Paper>
     );
 
-    // Разделяем на активные и завершённые для визуального разделения
-    const active    = tournaments.filter(t => t.status !== 'completed' && t.status !== 'archived');
-    const finished  = tournaments.filter(t => t.status === 'completed' || t.status === 'archived');
-
     return (
         <Stack gap="xs" mx={{ base: '-20px', sm: 0 }}>
-            {active.length > 0 && (
-                <>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="xs">
-                        Активные ({active.length})
-                    </Text>
-                    {active.map(t => (
-                        <TournamentRow key={t.tournamentId} tour={t} c={c} />
-                    ))}
-                </>
-            )}
+            {paginated.map(t => (
+                <TournamentRow key={t.tournamentId} tour={t} c={c} />
+            ))}
 
-            {finished.length > 0 && (
-                <>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="md">
-                        Завершённые ({finished.length})
-                    </Text>
-                    {finished.map(t => (
-                        <TournamentRow key={t.tournamentId} tour={t} c={c} />
-                    ))}
-                </>
+            {totalPages > 1 && (
+                <Center mt="sm">
+                    <Pagination
+                        total={totalPages}
+                        value={activePage}
+                        onChange={setActivePage}
+                        color="brandRed"
+                        size={{ base: 'sm', sm: 'md' }}
+                    />
+                </Center>
             )}
         </Stack>
     );

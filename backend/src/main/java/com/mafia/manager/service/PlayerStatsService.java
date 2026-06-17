@@ -15,6 +15,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.mafia.manager.dto.PlayerStatsByTypeDto;
+import com.mafia.manager.entity.PlayerStatsByType;
+import com.mafia.manager.repository.PlayerStatsByTypeRepository;
+import com.mafia.manager.repository.TournamentRepository;
+import java.util.Comparator;
+
 /**
  * Сервис статистики игроков.
  *
@@ -41,6 +47,8 @@ public class PlayerStatsService {
     private final GameSlotRepository             gameSlotRepository;
     private final BestMoveRepository             bestMoveRepository;
     private final UserRepository                 userRepository;
+    private final PlayerStatsByTypeRepository    playerStatsByTypeRepository;
+    private final TournamentRepository           tournamentRepository;
 
     // ── ПУБЛИЧНЫЙ API ─────────────────────────────────────────────────────────
 
@@ -88,6 +96,7 @@ public class PlayerStatsService {
                 log.error("Ошибка пересчёта статистики для userId={}: {}", userId, e.getMessage(), e);
             }
         }
+        recalculateByTypeForTournament(tournamentId);
 
         log.info("Пересчёт статистики для турнира {} завершён", tournamentId);
     }
@@ -161,6 +170,134 @@ public class PlayerStatsService {
             playerStatsRepository.save(ps);
         }
     }
+
+    /**
+     * Возвращает статистику игрока в разрезе типов турниров и периодов.
+     *
+     * <p>Для каждой записи: tournamentType x periodYear.</p>
+     * <p>Отсортировано: сначала "за всё время" (periodYear=null), затем по году DESC.</p>
+     *
+     * @param userId идентификатор пользователя
+     * @return список DTO (может быть пустым)
+     */
+    public List<PlayerStatsByTypeDto> getStatsByType(Long userId) {
+        return playerStatsByTypeRepository.findByUserId(userId).stream()
+                .map(PlayerStatsByTypeDto::fromEntity)
+                .sorted(Comparator
+                        // null (всё время) идёт первым
+                        .comparingInt((PlayerStatsByTypeDto s) -> s.getPeriodYear() == null ? 0 : 1)
+                        // внутри группы «по годам» — от нового к старому
+                        .thenComparing(Comparator.comparing(
+                                PlayerStatsByTypeDto::getPeriodYear,
+                                Comparator.nullsFirst(Comparator.reverseOrder())
+                        ))
+                )
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Пересчитывает статистику по типу турнира для всех одобренных участников.
+     * Вызывается вместе с {@link #recalculateForTournament} при завершении турнира.
+     *
+     * @param tournamentId идентификатор турнира
+     */
+    @Transactional
+    public void recalculateByTypeForTournament(Long tournamentId) {
+        // Определяем тип турнира из БД
+        String tournamentType = tournamentRepository.findById(tournamentId)
+                .map(t -> t.getType().name())   // "individual" | "team" | "season"
+                .orElse(null);
+
+        if (tournamentType == null) {
+            log.warn("recalculateByTypeForTournament: турнир {} не найден", tournamentId);
+            return;
+        }
+
+        log.info("Пересчёт статистики по типу '{}' для турнира {}", tournamentType, tournamentId);
+
+        List<Long> participantIds = loadApprovedParticipantIds(tournamentId);
+        if (participantIds.isEmpty()) return;
+
+        for (Long userId : participantIds) {
+            try {
+                recalculateByTypeForUser(userId, tournamentType);
+            } catch (Exception e) {
+                log.error("Ошибка пересчёта по типу для userId={}: {}", userId, e.getMessage(), e);
+            }
+        }
+
+        log.info("Пересчёт по типу '{}' для турнира {} завершён", tournamentType, tournamentId);
+    }
+
+    // ─── ВНУТРЕННИЕ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ──────────────────────────────────
+
+    /**
+     * Пересчитывает статистику одного игрока по конкретному типу турнира.
+     * Загружает все завершённые игры этого типа и агрегирует их.
+     *
+     * @param userId         идентификатор пользователя
+     * @param tournamentType "individual" | "team" | "season"
+     */
+    private void recalculateByTypeForUser(Long userId, String tournamentType) {
+        User user = userRepository.getReferenceById(userId);
+
+        // Загружаем завершённые слоты только из турниров нужного типа
+        List<GameSlot> allSlots = gameSlotRepository
+                .findCompletedSlotsByUserIdAndTournamentType(userId, tournamentType);
+
+        if (allSlots.isEmpty()) {
+            // Если игр нет — удаляем устаревшие записи этого типа
+            playerStatsByTypeRepository.deleteByUserIdAndTournamentType(userId, tournamentType);
+            return;
+        }
+
+        Set<Long> gameIdsWithBestMove       = bestMoveRepository.findGameIdsWhereAuthorUserId(userId);
+        Set<Long> gameIdsWithPerfectBestMove = bestMoveRepository.findGameIdsWherePerfectBestMoveByUserId(userId);
+
+        // Агрегируем в разрезе периодов (null = всё время, год = конкретный год)
+        Map<Short, MutableStats> statsByPeriod = aggregateStats(
+                allSlots, gameIdsWithBestMove, gameIdsWithPerfectBestMove
+        );
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Map.Entry<Short, MutableStats> entry : statsByPeriod.entrySet()) {
+            Short period = entry.getKey();
+            MutableStats agg = entry.getValue();
+
+            PlayerStatsByType ps = playerStatsByTypeRepository
+                    .findByUserIdAndTournamentTypeAndPeriodYear(userId, tournamentType, period)
+                    .orElse(new PlayerStatsByType());
+
+            applyAggToByTypeEntity(ps, user, tournamentType, period, agg, now);
+            playerStatsByTypeRepository.save(ps);
+        }
+    }
+
+    /**
+     * Применяет значения агрегата к сущности {@link PlayerStatsByType}.
+     */
+    private void applyAggToByTypeEntity(PlayerStatsByType ps, User user,
+                                        String tournamentType, Short period,
+                                        MutableStats agg, LocalDateTime now) {
+        ps.setUser(user);
+        ps.setTournamentType(tournamentType);
+        ps.setPeriodYear(period);
+        ps.setTotalGames(agg.totalGames);
+        ps.setGamesCivilian(agg.gamesCivilian);
+        ps.setGamesSheriff(agg.gamesSheriff);
+        ps.setGamesMafia(agg.gamesMafia);
+        ps.setGamesDon(agg.gamesDon);
+        ps.setWinsCivilian(agg.winsCivilian);
+        ps.setWinsSheriff(agg.winsSheriff);
+        ps.setWinsMafia(agg.winsMafia);
+        ps.setWinsDon(agg.winsDon);
+        ps.setBestMovesTotal(agg.bestMovesTotal);
+        ps.setBestMovesPerfect(agg.bestMovesPerfect);
+        ps.setFirstKilledCount(agg.firstKilledCount);
+        ps.setTotalFouls(agg.totalFouls);
+        ps.setLastRecalculatedAt(now);
+    }
+
 
     /**
      * Применяет значения агрегата к сущности {@link PlayerStats}.

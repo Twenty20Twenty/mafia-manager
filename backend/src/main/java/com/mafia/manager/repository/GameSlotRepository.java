@@ -34,4 +34,30 @@ public interface GameSlotRepository extends JpaRepository<GameSlot, Long> {
 
     @Query(value = "SELECT user_id FROM game_slots WHERE game_id = :gameId AND user_id IS NOT NULL", nativeQuery = true)
     List<Long> findUserIdsByGameId(@Param("gameId") Long gameId);
+
+    /**
+     * Все слоты конкретного игрока в ЗАВЕРШЁННЫХ играх указанного ТИПА турнира.
+     *
+     * <p>Подтягивает game и tournament (FETCH JOIN) для предотвращения N+1.
+     * Фильтрует по tournament.type, чтобы разделять individual / team / season.</p>
+     *
+     * @param userId         идентификатор пользователя
+     * @param tournamentType "individual" | "team" | "season" (имя Java-enum)
+     * @return список слотов
+     */
+    @Query("""
+    SELECT gs FROM GameSlot gs
+    JOIN FETCH gs.game g
+    JOIN FETCH g.tournament t
+    WHERE gs.user.id = :userId
+      AND g.status = 'completed'
+      AND g.winner IS NOT NULL
+      AND CAST(t.type AS string) = :tournamentType
+    ORDER BY g.date ASC NULLS LAST
+    """)
+    List<GameSlot> findCompletedSlotsByUserIdAndTournamentType(
+            @Param("userId")         Long   userId,
+            @Param("tournamentType") String tournamentType
+    );
 }
+

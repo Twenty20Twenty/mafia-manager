@@ -1,17 +1,23 @@
 // src/pages/clubs/ClubsPage.jsx
 import { useState, useMemo, useEffect } from 'react';
-import { Container, Title, Paper, Group, Avatar, Text, Stack, ThemeIcon, TextInput, Button, Center, Loader } from '@mantine/core';
+import {
+    Container, Title, Paper, Group, Avatar, Text, Stack, ThemeIcon,
+    TextInput, Button, Center, Loader, Pagination
+} from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { IconChevronRight, IconMapPin, IconSearch, IconPlus } from '@tabler/icons-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api/axios';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
+const PAGE_SIZE = 10;
+
 export default function ClubsPage() {
     const [search, setSearch]                         = useState('');
     const [clubs, setClubs]                           = useState([]);
     const [currentUserProfile, setCurrentUserProfile] = useState(null);
     const [loading, setLoading]                       = useState(true);
+    const [activePage, setActivePage]                 = useState(1);
     const { user } = useAuth();
     const c = useThemeColors();
 
@@ -39,15 +45,17 @@ export default function ClubsPage() {
         return () => clearTimeout(timer);
     }, [user]);
 
-
-
-    const filteredClubs = useMemo(() =>
-        clubs.filter(club =>
+    const filteredClubs = useMemo(() => {
+        const result = clubs.filter(club =>
             club.name.toLowerCase().includes(search.toLowerCase()) ||
             (club.city && club.city.toLowerCase().includes(search.toLowerCase()))
-        ),
-        [search, clubs]
-    );
+        );
+        setActivePage(1);
+        return result;
+    }, [search, clubs]);
+
+    const totalPages = Math.ceil(filteredClubs.length / PAGE_SIZE);
+    const paginated  = filteredClubs.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE);
 
     const canCreateClub = user && currentUserProfile && !currentUserProfile.clubId;
 
@@ -61,8 +69,13 @@ export default function ClubsPage() {
                             Создать клуб
                         </Button>
                     )}
-                    <TextInput placeholder="Поиск клуба..." leftSection={<IconSearch size={16} />}
-                        value={search} onChange={e => setSearch(e.currentTarget.value)} w={250} />
+                    <TextInput
+                        placeholder="Поиск клуба..."
+                        leftSection={<IconSearch size={16} />}
+                        value={search}
+                        onChange={e => { setSearch(e.currentTarget.value); setActivePage(1); }}
+                        w={250}
+                    />
                 </Group>
             </Group>
 
@@ -75,8 +88,12 @@ export default function ClubsPage() {
                         </Button>
                     )}
                 </Group>
-                <TextInput placeholder="Поиск клуба..." leftSection={<IconSearch size={16} />}
-                    value={search} onChange={e => setSearch(e.currentTarget.value)} />
+                <TextInput
+                    placeholder="Поиск клуба..."
+                    leftSection={<IconSearch size={16} />}
+                    value={search}
+                    onChange={e => { setSearch(e.currentTarget.value); setActivePage(1); }}
+                />
             </Stack>
 
             {loading ? (
@@ -84,43 +101,56 @@ export default function ClubsPage() {
             ) : filteredClubs.length === 0 ? (
                 <Text c="dimmed" ta="center" py="xl">Клубы не найдены</Text>
             ) : (
-                <Stack gap="md">
-                    {filteredClubs.map(club => (
-                        <Paper
-                            key={club.id}
-                            component={Link} to={`/clubs/${club.id}`}
-                            withBorder p="md" radius="md"
-                            style={{
-                                textDecoration: 'none', color: 'inherit',
-                                transition: 'background-color 0.2s',
-                                backgroundColor: c.surface2,
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = c.surface3}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = c.surface2}
-                        >
-                            <Group justify="space-between" wrap="nowrap">
-                                <Group wrap="nowrap" style={{ minWidth: 0 }}>
-                                    <Avatar src={club.logoUrl}
-                                            w={50}
-                                            h={50}
-                                            radius="25%"
-                                            p={2}
-                                            style={{ flexShrink: 0 }} />
-                                    <div style={{ minWidth: 0 }}>
-                                        <Text size="md" fw={700} truncate>{club.name}</Text>
-                                        <Group gap={5} c="dimmed" mt={0}>
-                                            <IconMapPin size={14} />
-                                            <Text size="xs">{club.city || 'Не указан'}</Text>
-                                        </Group>
-                                    </div>
+                <>
+                    <Stack gap="md">
+                        {paginated.map(club => (
+                            <Paper
+                                key={club.id}
+                                component={Link} to={`/clubs/${club.id}`}
+                                withBorder p="md" radius="md"
+                                style={{
+                                    textDecoration: 'none', color: 'inherit',
+                                    transition: 'background-color 0.2s',
+                                    backgroundColor: c.surface2,
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = c.surface3}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = c.surface2}
+                            >
+                                <Group justify="space-between" wrap="nowrap">
+                                    <Group wrap="nowrap" style={{ minWidth: 0 }}>
+                                        <Avatar
+                                            src={club.logoUrl}
+                                            w={50} h={50} radius="25%" p={2}
+                                            style={{ flexShrink: 0 }}
+                                        />
+                                        <div style={{ minWidth: 0 }}>
+                                            <Text size="md" fw={700} truncate>{club.name}</Text>
+                                            <Group gap={5} c="dimmed" mt={0}>
+                                                <IconMapPin size={14} />
+                                                <Text size="xs">{club.city || 'Не указан'}</Text>
+                                            </Group>
+                                        </div>
+                                    </Group>
+                                    <ThemeIcon variant="transparent" color="gray" style={{ flexShrink: 0 }}>
+                                        <IconChevronRight size={20} />
+                                    </ThemeIcon>
                                 </Group>
-                                <ThemeIcon variant="transparent" color="gray" style={{ flexShrink: 0 }}>
-                                    <IconChevronRight size={20} />
-                                </ThemeIcon>
-                            </Group>
-                        </Paper>
-                    ))}
-                </Stack>
+                            </Paper>
+                        ))}
+                    </Stack>
+
+                    {totalPages > 1 && (
+                        <Center mt="xl">
+                            <Pagination
+                                total={totalPages}
+                                value={activePage}
+                                onChange={setActivePage}
+                                color="brandRed"
+                                size={{ base: 'sm', sm: 'md' }}
+                            />
+                        </Center>
+                    )}
+                </>
             )}
         </Container>
     );
