@@ -38,7 +38,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${WEB_PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${WEB_PGADMIN_PASSWORD}
     ports:
-      - "5050:80"                             
+      - "5050:5050"                             
     restart: unless-stopped
     depends_on:
       - db
