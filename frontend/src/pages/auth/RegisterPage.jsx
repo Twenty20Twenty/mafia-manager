@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { TextInput, PasswordInput, Button, Paper, Title, Container, Text, Anchor, Select, Alert } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { IconAlertCircle } from '@tabler/icons-react';
+import {IconAlertCircle, IconInfoCircle} from '@tabler/icons-react';
 import api from '../../api/axios.js';
 
 export default function RegisterPage() {
@@ -67,10 +67,16 @@ export default function RegisterPage() {
 
             <Paper withBorder shadow="md" p={{ base: 'md', sm: 30 }} mt={30} radius="md">
                 <form onSubmit={handleSubmit}>
-                    {error && (
-                        <Alert icon={<IconAlertCircle size={16} />} title="Ошибка!" color="red" mb="md">
+                    {error && ( error === "Это фантомный аккаунт. Войдите через код привязки на странице активации." ?
+                        (<Alert variant="light" color="blue" icon={<IconInfoCircle size={16} />} mb="md" title="Активируйте аккаунт">
+                            Это фантомный аккаунт. Войдите через код привязки
+                            <Anchor component={Link} to="/claim-phantom">
+                                на странице активации
+                            </Anchor>.
+                        </Alert>) :
+                        (<Alert icon={<IconAlertCircle size={16} />} title="Ошибка!" color="red" mb="md">
                             {error}
-                        </Alert>
+                        </Alert>)
                     )}
 
                     <TextInput

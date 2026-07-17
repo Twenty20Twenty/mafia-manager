@@ -1,5 +1,5 @@
 // src/pages/admin/CreatePhantomPage.jsx
-import { Container, Title, TextInput, Button, Paper, Group, Select, Alert } from '@mantine/core';
+import {Container, Title, TextInput, Button, Paper, Group, Select, Alert, Stack} from '@mantine/core';
 import { IconArrowLeft, IconUserPlus, IconInfoCircle, IconShieldLock } from '@tabler/icons-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -55,47 +55,48 @@ export default function CreatePhantomPage() {
             </Button>
 
             <Title order={2} mb="lg">Создание фантомного профиля</Title>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                <Alert variant="light" color="blue" title="Что такое фантомный профиль?" icon={<IconInfoCircle />} mb="xl">
+                    Это профиль игрока, который участвует в турнирах, но еще не зарегистрировался на сайте.
+                </Alert>
 
-            <Alert variant="light" color="blue" title="Что такое фантомный профиль?" icon={<IconInfoCircle />} mb="xl">
-                Это профиль игрока, который участвует в турнирах, но еще не зарегистрировался на сайте.
-            </Alert>
-
-            {/* p: меньше на мобилке */}
-            <Paper withBorder p={{ base: 'md', sm: 'xl' }} radius="md">
-                <form onSubmit={handleSubmit}>
-                    <TextInput
-                        label="Никнейм" required
-                        value={formData.nickname}
-                        onChange={e => set('nickname', e.currentTarget.value)}
-                    />
-                    <Select
-                        label="Город" mt="md" searchable
-                        data={cities}
-                        value={formData.city}
-                        onChange={val => set('city', val)}
-                    />
-                    <Select
-                        label="Пол" mt="md"
-                        data={[
-                            { value: 'male',   label: 'Мужской' },
-                            { value: 'female', label: 'Женский' },
-                        ]}
-                        value={formData.gender}
-                        onChange={val => set('gender', val)}
-                    />
-                    {/* justify="flex-end" + fullWidth на мобилке через Button fullWidth */}
-                    <Group justify="flex-end" mt="xl">
-                        <Button
-                            type="submit"
-                            loading={loading}
-                            leftSection={<IconUserPlus size={16} />}
-                            color="brandRed"
-                        >
-                            Создать профиль
-                        </Button>
-                    </Group>
-                </form>
-            </Paper>
+                {/* p: меньше на мобилке */}
+                <Paper withBorder p={{ base: 'md', sm: 'xl' }} radius="md">
+                    <form onSubmit={handleSubmit}>
+                        <TextInput
+                            label="Никнейм" required
+                            value={formData.nickname}
+                            onChange={e => set('nickname', e.currentTarget.value)}
+                        />
+                        <Select
+                            label="Город" mt="md" searchable
+                            data={cities}
+                            value={formData.city}
+                            onChange={val => set('city', val)}
+                        />
+                        <Select
+                            label="Пол" mt="md"
+                            data={[
+                                { value: 'male',   label: 'Мужской' },
+                                { value: 'female', label: 'Женский' },
+                            ]}
+                            value={formData.gender}
+                            onChange={val => set('gender', val)}
+                        />
+                        {/* justify="flex-end" + fullWidth на мобилке через Button fullWidth */}
+                        <Group justify="flex-end" mt="xl">
+                            <Button
+                                type="submit"
+                                loading={loading}
+                                leftSection={<IconUserPlus size={16} />}
+                                color="brandRed"
+                            >
+                                Создать профиль
+                            </Button>
+                        </Group>
+                    </form>
+                </Paper>
+            </Stack>
         </Container>
     );
 }

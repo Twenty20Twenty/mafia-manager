@@ -1,5 +1,5 @@
 // src/pages/admin/AdminDashboard.jsx
-import { Container, Title, SimpleGrid, Paper, Text, ThemeIcon, Group } from '@mantine/core';
+import {Container, Title, SimpleGrid, Paper, Text, ThemeIcon, Group, Stack} from '@mantine/core';
 import { IconGavel, IconUserPlus, IconTrophy, IconPlus, IconBuildingFortress } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -22,41 +22,58 @@ export default function AdminDashboard() {
     return (
         <Container size="lg" py="xl">
             <Title order={2} mb="xl">Панель Администратора</Title>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+                    {items.map((item) => (
+                        <Paper
+                            key={item.title}
+                            component={Link}
+                            to={item.link}
+                            withBorder p="md" radius="md"
+                            style={{
+                                textDecoration: 'none',
+                                color: 'inherit',
+                                transition: 'transform 0.2s, background-color 0.15s',
+                                backgroundColor: c.surface2,
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'scale(1.02)';
+                                e.currentTarget.style.backgroundColor = c.surface3;
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.backgroundColor = c.surface2;
+                            }}
+                        >
+                            <Group align="flex-start" wrap="nowrap">
+                                <ThemeIcon size="xl" color={item.color} variant="light" style={{ flexShrink: 0 }}>
+                                    <item.icon size={22} />
+                                </ThemeIcon>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
-                {items.map((item) => (
-                    <Paper
-                        key={item.title}
-                        component={Link}
-                        to={item.link}
-                        withBorder p="md" radius="md"
-                        style={{
-                            textDecoration: 'none',
-                            color: 'inherit',
-                            transition: 'transform 0.2s, background-color 0.15s',
-                            backgroundColor: c.surface2,
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'scale(1.02)';
-                            e.currentTarget.style.backgroundColor = c.surface3;
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.backgroundColor = c.surface2;
-                        }}
-                    >
-                        <Group align="flex-start">
-                            <ThemeIcon size="xl" color={item.color} variant="light" style={{ flexShrink: 0 }}>
-                                <item.icon size={22} />
-                            </ThemeIcon>
-                            <div style={{ minWidth: 0 }}>
-                                <Text fw={700} size="lg" style={{ wordBreak: 'break-word' }}>{item.title}</Text>
-                                {item.desc && <Text size="xs" c="dimmed">{item.desc}</Text>}
-                            </div>
-                        </Group>
-                    </Paper>
-                ))}
-            </SimpleGrid>
+                                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                                    <Text fw={700} size="lg" style={{
+                                            whiteSpace: "normal",
+                                            overflowWrap: "break-word",
+                                            wordBreak: "break-word",
+                                        }}>
+                                        {item.title}
+                                    </Text>
+
+                                    {item.desc && (
+                                        <Text size="xs" c="dimmed" style={{
+                                                whiteSpace: "normal",
+                                                overflowWrap: "break-word",
+                                                wordBreak: "break-word",
+                                            }}>
+                                            {item.desc}
+                                        </Text>
+                                    )}
+                                </Stack>
+                            </Group>
+                        </Paper>
+                    ))}
+                </SimpleGrid>
+            </Stack>
         </Container>
     );
 }

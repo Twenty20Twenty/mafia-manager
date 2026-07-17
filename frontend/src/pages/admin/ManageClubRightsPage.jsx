@@ -76,50 +76,51 @@ export default function ManageClubRightsPage() {
                 В админ-панель
             </Button>
             <Title order={2} mb="xl">Права клубов</Title>
-
-            <Paper withBorder p="xl" radius="md" style={{ backgroundColor: c.surface2 }}>
-                <Select
-                    label="Поиск клуба" placeholder="Название клуба..."
-                    data={selectData} renderOption={renderSelectOption}
-                    searchable leftSection={<IconSearch size={16} />} size="md" mb="xl"
-                    onChange={handleSelectClub} value={selectedClubId}
-                />
-                <Divider mb="xl" />
-                <Stack gap="lg">
-                    <Group
-                        justify="space-between" p="sm"
-                        style={{
-                            borderRadius: 8,
-                            backgroundColor: isDisabled ? 'transparent' : c.surface3,
-                        }}
-                    >
-                        <Group>
-                            <IconTrophy size={24} color={isDisabled ? 'gray' : 'orange'} />
-                            <div>
-                                <Text fw={500} c={isDisabled ? 'dimmed' : c.textBright}>Турнирный оператор</Text>
-                                <Text size="xs" c="dimmed">Разрешает создавать турниры</Text>
-                            </div>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                <Paper withBorder p="xl" radius="md" style={{ backgroundColor: c.surface2 }}>
+                    <Select
+                        label="Поиск клуба" placeholder="Название клуба..."
+                        data={selectData} renderOption={renderSelectOption}
+                        searchable leftSection={<IconSearch size={16} />} size="md" mb="xl"
+                        onChange={handleSelectClub} value={selectedClubId}
+                    />
+                    <Divider mb="xl" />
+                    <Stack gap="lg">
+                        <Group
+                            justify="space-between" p="sm"
+                            style={{
+                                borderRadius: 8,
+                                backgroundColor: isDisabled ? 'transparent' : c.surface3,
+                            }}
+                        >
+                            <Group>
+                                <IconTrophy size={24} color={isDisabled ? 'gray' : 'orange'} />
+                                <div>
+                                    <Text fw={500} c={isDisabled ? 'dimmed' : c.textBright}>Турнирный оператор</Text>
+                                    <Text size="xs" c="dimmed">Разрешает создавать турниры</Text>
+                                </div>
+                            </Group>
+                            <Switch
+                                size="lg" color="orange"
+                                disabled={isDisabled}
+                                checked={isOperator}
+                                onChange={e => setIsOperator(e.currentTarget.checked)}
+                            />
                         </Group>
-                        <Switch
-                            size="lg" color="orange"
+                    </Stack>
+                    <Group justify="flex-end" mt="xl">
+                        <Button
+                            leftSection={<IconDeviceFloppy size={16} />}
+                            color="green"
                             disabled={isDisabled}
-                            checked={isOperator}
-                            onChange={e => setIsOperator(e.currentTarget.checked)}
-                        />
+                            onClick={handleSave}
+                            loading={loading}
+                        >
+                            Сохранить
+                        </Button>
                     </Group>
-                </Stack>
-                <Group justify="flex-end" mt="xl">
-                    <Button
-                        leftSection={<IconDeviceFloppy size={16} />}
-                        color="green"
-                        disabled={isDisabled}
-                        onClick={handleSave}
-                        loading={loading}
-                    >
-                        Сохранить
-                    </Button>
-                </Group>
-            </Paper>
+                </Paper>
+            </Stack>
         </Container>
     );
 }

@@ -102,14 +102,6 @@ services:
       - frontend
     restart: unless-stopped
 
-  mailpit:
-    image: axllent/mailpit
-    container_name: mafia_mailpit
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    restart: unless-stopped
-
 volumes:
   postgres_data:
   maven_cache:

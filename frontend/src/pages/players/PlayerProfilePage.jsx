@@ -231,44 +231,46 @@ export default function PlayerProfilePage() {
                 Назад к списку
             </Button>
 
-            {/* ── Шапка профиля ────────────────────────────────────────────── */}
-            <Paper radius="md" p={{ base: 'md', sm: 'xl' }} withBorder mb="xl"
-                   style={{ backgroundColor: c.surface2 }}>
-                <Group align="flex-start" wrap="nowrap">
-                    <Avatar
-                        src={player.avatarUrl}
-                        w={100} h={100} radius="50%"
-                        color="brandRed"
-                        style={{ flexShrink: 0 }}
-                    >
-                        {player.nickname?.substring(0, 2).toUpperCase()}
-                    </Avatar>
-                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                        <Title order={2} size={{ base: 'h3', sm: 'h2' }}>{player.nickname}</Title>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                {/* ── Шапка профиля ────────────────────────────────────────────── */}
+                <Paper radius="md" p={{ base: 'md', sm: 'xl' }} withBorder mb="xl"
+                       style={{ backgroundColor: c.surface2 }}>
+                    <Group align="flex-start" wrap="nowrap">
+                        <Avatar
+                            src={player.avatarUrl}
+                            w={100} h={100} radius="50%"
+                            color="brandRed"
+                            style={{ flexShrink: 0 }}
+                        >
+                            {player.nickname?.substring(0, 2).toUpperCase()}
+                        </Avatar>
+                        <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                            <Title order={2} size={{ base: 'h3', sm: 'h2' }}>{player.nickname}</Title>
 
-                        {player.city && (
-                            <Group gap={5} c="dimmed">
-                                <IconMapPin size={16} />
-                                <Text size="sm">{player.city}</Text>
-                            </Group>
-                        )}
+                            {player.city && (
+                                <Group gap={5} c="dimmed">
+                                    <IconMapPin size={16} />
+                                    <Text size="sm">{player.city}</Text>
+                                </Group>
+                            )}
 
-                        {regDate && (
-                            <Text size="xs" c="dimmed">В системе с {regDate}</Text>
-                        )}
+                            {regDate && (
+                                <Text size="xs" c="dimmed">В системе с {regDate}</Text>
+                            )}
 
-                        {club && (
-                            <Badge
-                                component={Link} to={`/clubs/${club.id}`}
-                                color="blue" variant="light"
-                                style={{ cursor: 'pointer', width: 'fit-content' }}
-                            >
-                                {club.name}
-                            </Badge>
-                        )}
-                    </Stack>
-                </Group>
-            </Paper>
+                            {club && (
+                                <Badge
+                                    component={Link} to={`/clubs/${club.id}`}
+                                    color="blue" variant="light"
+                                    style={{ cursor: 'pointer', width: 'fit-content' }}
+                                >
+                                    {club.name}
+                                </Badge>
+                            )}
+                        </Stack>
+                    </Group>
+                </Paper>
+            </Stack>
 
             {/* ── Табы ─────────────────────────────────────────────────────── */}
             <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
@@ -283,117 +285,119 @@ export default function PlayerProfilePage() {
 
                 {/* ── Вкладка: Статистика ───────────────────────────────────── */}
                 <Tabs.Panel value="stats">
-                    {/* Строка управления: фильтр типов + период */}
-                    <Group mb="xl" justify="space-between" wrap="wrap" gap="xs" align="flex-end">
+                    <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                        {/* Строка управления: фильтр типов + период */}
+                        <Group mb="xl" justify="space-between" wrap="wrap" gap="xs" align="flex-end">
 
-                        {/* Фильтр по типу турнира */}
-                        <Popover
-                            opened={filterOpen}
-                            onChange={setFilterOpen}
-                            position="bottom-start"
-                            withArrow
-                            shadow="md"
-                        >
-                            <Popover.Target>
-                                <Button
-                                    variant={filterActive ? 'filled' : 'default'}
-                                    color={filterActive ? 'brandRed' : 'gray'}
-                                    leftSection={<IconFilter size={16} />}
-                                    size="sm"
-                                    onClick={() => setFilterOpen(o => !o)}
-                                >
-                                    {filterActive
-                                        ? selectedTypes.map(t => TYPE_CONFIG[t]?.label).join(', ')
-                                        : 'Все типы турниров'}
-                                </Button>
-                            </Popover.Target>
-                            <Popover.Dropdown>
-                                <Stack gap="sm" p="xs" style={{ minWidth: 200 }}>
-                                    <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-                                        Типы турниров
-                                    </Text>
-                                    {TOURNAMENT_TYPES.map(type => {
-                                        const cfg   = TYPE_CONFIG[type];
-                                        const count = statsByType.filter(s => s.tournamentType === type && s.periodYear === null).reduce((a, s) => a + (s.totalGames || 0), 0);
-                                        return (
-                                            <Checkbox
-                                                key={type}
-                                                label={
-                                                    <Group gap="xs">
-                                                        <Badge size="xs" color={cfg.color} variant="light">
-                                                            {cfg.label}
-                                                        </Badge>
-                                                        <Text size="xs" c="dimmed">{count} игр</Text>
-                                                    </Group>
-                                                }
-                                                checked={selectedTypes.includes(type)}
-                                                onChange={() => toggleType(type)}
-                                                color={cfg.color}
-                                            />
-                                        );
-                                    })}
-                                    {!allSelected && (
-                                        <Button
-                                            size="xs" variant="subtle" color="gray"
-                                            onClick={() => setSelectedTypes([...TOURNAMENT_TYPES])}
-                                        >
-                                            Сбросить фильтр
-                                        </Button>
-                                    )}
-                                </Stack>
-                            </Popover.Dropdown>
-                        </Popover>
-
-                        {/* Период */}
-                        {periodOptions.length > 1 ? (
-                            <Select
-                                label="Период"
-                                data={periodOptions}
-                                value={selectedPeriod}
-                                onChange={v => setSelectedPeriod(v ?? 'all')}
-                                style={{ width: 180 }}
-                                size="sm"
-                            />
-                        ) : <Box />}
-                    </Group>
-
-                    {/* Активные бейджи фильтра */}
-                    {filterActive && (
-                        <Group gap="xs" mb="md">
-                            <Text size="xs" c="dimmed">Показано:</Text>
-                            {selectedTypes.map(t => (
-                                <Badge
-                                    key={t}
-                                    size="sm"
-                                    color={TYPE_CONFIG[t]?.color}
-                                    variant="light"
-                                    rightSection={
-                                        selectedTypes.length > 1 ? (
-                                            <ActionIcon
-                                                size={10}
-                                                variant="transparent"
-                                                color={TYPE_CONFIG[t]?.color}
-                                                onClick={() => toggleType(t)}
+                            {/* Фильтр по типу турнира */}
+                            <Popover
+                                opened={filterOpen}
+                                onChange={setFilterOpen}
+                                position="bottom-start"
+                                withArrow
+                                shadow="md"
+                            >
+                                <Popover.Target>
+                                    <Button
+                                        variant={filterActive ? 'filled' : 'default'}
+                                        color={filterActive ? 'brandRed' : 'gray'}
+                                        leftSection={<IconFilter size={16} />}
+                                        size="sm"
+                                        onClick={() => setFilterOpen(o => !o)}
+                                    >
+                                        {filterActive
+                                            ? selectedTypes.map(t => TYPE_CONFIG[t]?.label).join(', ')
+                                            : 'Все типы турниров'}
+                                    </Button>
+                                </Popover.Target>
+                                <Popover.Dropdown>
+                                    <Stack gap="sm" p="xs" style={{ minWidth: 200 }}>
+                                        <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+                                            Типы турниров
+                                        </Text>
+                                        {TOURNAMENT_TYPES.map(type => {
+                                            const cfg   = TYPE_CONFIG[type];
+                                            const count = statsByType.filter(s => s.tournamentType === type && s.periodYear === null).reduce((a, s) => a + (s.totalGames || 0), 0);
+                                            return (
+                                                <Checkbox
+                                                    key={type}
+                                                    label={
+                                                        <Group gap="xs">
+                                                            <Badge size="xs" color={cfg.color} variant="light">
+                                                                {cfg.label}
+                                                            </Badge>
+                                                            <Text size="xs" c="dimmed">{count} игр</Text>
+                                                        </Group>
+                                                    }
+                                                    checked={selectedTypes.includes(type)}
+                                                    onChange={() => toggleType(type)}
+                                                    color={cfg.color}
+                                                />
+                                            );
+                                        })}
+                                        {!allSelected && (
+                                            <Button
+                                                size="xs" variant="subtle" color="gray"
+                                                onClick={() => setSelectedTypes([...TOURNAMENT_TYPES])}
                                             >
-                                                ×
-                                            </ActionIcon>
-                                        ) : null
-                                    }
-                                >
-                                    {TYPE_CONFIG[t]?.label}
-                                </Badge>
-                            ))}
-                        </Group>
-                    )}
+                                                Сбросить фильтр
+                                            </Button>
+                                        )}
+                                    </Stack>
+                                </Popover.Dropdown>
+                            </Popover>
 
-                    {currentStats ? (
-                        <StatsSection stats={currentStats} c={c} />
-                    ) : (
-                        <Paper withBorder p="xl" ta="center" bg="transparent"
-                               style={{ borderStyle: 'dashed' }}>
-                            <Text c="dimmed">Нет данных за выбранный период и тип турнира</Text>
-                        </Paper>
-                    )}
+                            {/* Период */}
+                            {periodOptions.length > 1 ? (
+                                <Select
+                                    label="Период"
+                                    data={periodOptions}
+                                    value={selectedPeriod}
+                                    onChange={v => setSelectedPeriod(v ?? 'all')}
+                                    style={{ width: 180 }}
+                                    size="sm"
+                                />
+                            ) : <Box />}
+                        </Group>
+
+                        {/* Активные бейджи фильтра */}
+                        {filterActive && (
+                            <Group gap="xs" mb="md">
+                                <Text size="xs" c="dimmed">Показано:</Text>
+                                {selectedTypes.map(t => (
+                                    <Badge
+                                        key={t}
+                                        size="sm"
+                                        color={TYPE_CONFIG[t]?.color}
+                                        variant="light"
+                                        rightSection={
+                                            selectedTypes.length > 1 ? (
+                                                <ActionIcon
+                                                    size={10}
+                                                    variant="transparent"
+                                                    color={TYPE_CONFIG[t]?.color}
+                                                    onClick={() => toggleType(t)}
+                                                >
+                                                    ×
+                                                </ActionIcon>
+                                            ) : null
+                                        }
+                                    >
+                                        {TYPE_CONFIG[t]?.label}
+                                    </Badge>
+                                ))}
+                            </Group>
+                        )}
+
+                        {currentStats ? (
+                            <StatsSection stats={currentStats} c={c} />
+                        ) : (
+                            <Paper withBorder p="xl" ta="center" bg="transparent"
+                                   style={{ borderStyle: 'dashed' }}>
+                                <Text c="dimmed">Нет данных за выбранный период и тип турнира</Text>
+                            </Paper>
+                        )}
+                    </Stack>
                 </Tabs.Panel>
 
                 {/* ── Вкладка: Турниры ──────────────────────────────────────── */}

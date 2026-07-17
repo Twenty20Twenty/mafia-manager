@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { TextInput, PasswordInput, Button, Paper, Title, Container, Text, Anchor, Alert, Group } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { IconAlertCircle, IconMailForward } from '@tabler/icons-react';
+import {IconAlertCircle, IconInfoCircle, IconMailForward} from '@tabler/icons-react';
 
 export default function LoginPage() {
     const [nickname, setNickname] = useState('');
@@ -79,11 +79,18 @@ export default function LoginPage() {
                     </Alert>
                 ) : (
                     <form onSubmit={handleSubmit}>
-                        {error && (
-                            <Alert icon={<IconAlertCircle size={16} />} title="Ошибка!" color="red" mb="md">
-                                {error}
-                            </Alert>
+                        {error && ( error === "Это фантомный аккаунт. Войдите через код привязки на странице активации." ?
+                                (<Alert variant="light" color="blue" icon={<IconInfoCircle size={16} />} mb="md" title="Активируйте аккаунт">
+                                    Это фантомный аккаунт. Войдите через код привязки
+                                    <Anchor component={Link} to="/claim-phantom">
+                                        на странице активации
+                                    </Anchor>.
+                                </Alert>) :
+                                (<Alert icon={<IconAlertCircle size={16} />} title="Ошибка!" color="red" mb="md">
+                                    {error}
+                                </Alert>)
                         )}
+
                         <TextInput
                             label="Никнейм"
                             placeholder="Например: Фера"

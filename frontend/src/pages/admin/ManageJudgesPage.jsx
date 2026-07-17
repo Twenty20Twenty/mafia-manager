@@ -145,89 +145,90 @@ export default function ManageJudgesPage() {
                 Назад к списку
             </Button>
             <Title order={2} mb="xl">Выдача статуса судьи</Title>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                <Paper withBorder p={{ base: 'md', sm: 'xl' }} radius="md" style={{ backgroundColor: c.surface2 }}>
+                    <Group align="flex-end" mb="xl">
+                        <Select
+                            label="Поиск игрока"
+                            description="Выберите игрока, чтобы изменить его права"
+                            placeholder="Введите никнейм..."
+                            data={selectData}
+                            renderOption={renderSelectOption}
+                            searchable
+                            searchValue={searchValue}
+                            onSearchChange={setSearchValue}
+                            filter={({ options }) => options}
+                            nothingFoundMessage="Игрок не найден"
+                            leftSection={<IconSearch size={16} />}
+                            size="md"
+                            style={{ flex: 1 }}
+                            onChange={handleSelectUser}
+                            value={selectedPlayerId}
+                        />
+                    </Group>
 
-            <Paper withBorder p={{ base: 'md', sm: 'xl' }} radius="md" style={{ backgroundColor: c.surface2 }}>
-                <Group align="flex-end" mb="xl">
-                    <Select
-                        label="Поиск игрока"
-                        description="Выберите игрока, чтобы изменить его права"
-                        placeholder="Введите никнейм..."
-                        data={selectData}
-                        renderOption={renderSelectOption}
-                        searchable
-                        searchValue={searchValue}
-                        onSearchChange={setSearchValue}
-                        filter={({ options }) => options}
-                        nothingFoundMessage="Игрок не найден"
-                        leftSection={<IconSearch size={16} />}
-                        size="md"
-                        style={{ flex: 1 }}
-                        onChange={handleSelectUser}
-                        value={selectedPlayerId}
-                    />
-                </Group>
+                    <Divider mb="xl" label="Настройка прав" labelPosition="center" />
 
-                <Divider mb="xl" label="Настройка прав" labelPosition="center" />
+                    <Stack gap="lg">
+                        <SwitchRow
+                            icon={<IconUserCheck size={20} color={isControlsDisabled ? 'gray' : 'var(--mantine-color-brandRed-5)'} />}
+                            label="Статус Судьи"
+                            description="Базовое право судить игры"
+                            color="brandRed"
+                            disabled={isControlsDisabled}
+                            checked={permissions.isJudge}
+                            onChange={e => {
+                                const checked = e.currentTarget.checked;
+                                setPermissions({
+                                    isJudge:        checked,
+                                    canJudgeFinals: checked ? permissions.canJudgeFinals : false,
+                                    canBeHeadJudge: checked ? permissions.canBeHeadJudge : false,
+                                });
+                            }}
+                        />
+                        <SwitchRow
+                            icon={<IconCertificate size={20} color={isSubStatusDisabled ? 'gray' : 'var(--mantine-color-orange-5)'} />}
+                            label="Судейство финалов"
+                            description="Допуск к финальным играм турниров"
+                            color="orange"
+                            disabled={isSubStatusDisabled}
+                            checked={permissions.canJudgeFinals}
+                            onChange={e => setPermissions({ ...permissions, canJudgeFinals: e.currentTarget.checked })}
+                        />
+                        <SwitchRow
+                            icon={<IconGavel size={20} color={isSubStatusDisabled ? 'gray' : 'var(--mantine-color-violet-5)'} />}
+                            label="Главный Судья (ГС)"
+                            description="Может организовывать турниры"
+                            color="violet"
+                            disabled={isSubStatusDisabled}
+                            checked={permissions.canBeHeadJudge}
+                            onChange={e => setPermissions({ ...permissions, canBeHeadJudge: e.currentTarget.checked })}
+                        />
+                    </Stack>
 
-                <Stack gap="lg">
-                    <SwitchRow
-                        icon={<IconUserCheck size={20} color={isControlsDisabled ? 'gray' : 'var(--mantine-color-brandRed-5)'} />}
-                        label="Статус Судьи"
-                        description="Базовое право судить игры"
-                        color="brandRed"
-                        disabled={isControlsDisabled}
-                        checked={permissions.isJudge}
-                        onChange={e => {
-                            const checked = e.currentTarget.checked;
-                            setPermissions({
-                                isJudge:        checked,
-                                canJudgeFinals: checked ? permissions.canJudgeFinals : false,
-                                canBeHeadJudge: checked ? permissions.canBeHeadJudge : false,
-                            });
-                        }}
-                    />
-                    <SwitchRow
-                        icon={<IconCertificate size={20} color={isSubStatusDisabled ? 'gray' : 'var(--mantine-color-orange-5)'} />}
-                        label="Судейство финалов"
-                        description="Допуск к финальным играм турниров"
-                        color="orange"
-                        disabled={isSubStatusDisabled}
-                        checked={permissions.canJudgeFinals}
-                        onChange={e => setPermissions({ ...permissions, canJudgeFinals: e.currentTarget.checked })}
-                    />
-                    <SwitchRow
-                        icon={<IconGavel size={20} color={isSubStatusDisabled ? 'gray' : 'var(--mantine-color-violet-5)'} />}
-                        label="Главный Судья (ГС)"
-                        description="Может организовывать турниры"
-                        color="violet"
-                        disabled={isSubStatusDisabled}
-                        checked={permissions.canBeHeadJudge}
-                        onChange={e => setPermissions({ ...permissions, canBeHeadJudge: e.currentTarget.checked })}
-                    />
-                </Stack>
-
-                <Group justify="flex-end" mt="xl" wrap="wrap">
-                    <Button
-                        variant="default"
-                        disabled={isControlsDisabled}
-                        onClick={() => {
-                            setSelectedPlayerId(null);
-                            setPermissions({ isJudge: false, canJudgeFinals: false, canBeHeadJudge: false });
-                        }}
-                    >
-                        Сброс
-                    </Button>
-                    <Button
-                        leftSection={<IconDeviceFloppy size={16} />}
-                        color="green"
-                        disabled={isControlsDisabled}
-                        onClick={handleSave}
-                        loading={saving}
-                    >
-                        Сохранить
-                    </Button>
-                </Group>
-            </Paper>
+                    <Group justify="flex-end" mt="xl" wrap="wrap">
+                        <Button
+                            variant="default"
+                            disabled={isControlsDisabled}
+                            onClick={() => {
+                                setSelectedPlayerId(null);
+                                setPermissions({ isJudge: false, canJudgeFinals: false, canBeHeadJudge: false });
+                            }}
+                        >
+                            Сброс
+                        </Button>
+                        <Button
+                            leftSection={<IconDeviceFloppy size={16} />}
+                            color="green"
+                            disabled={isControlsDisabled}
+                            onClick={handleSave}
+                            loading={saving}
+                        >
+                            Сохранить
+                        </Button>
+                    </Group>
+                </Paper>
+            </Stack>
         </Container>
     );
 }

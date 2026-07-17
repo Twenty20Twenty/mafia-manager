@@ -1,7 +1,7 @@
 // src/pages/tournaments/CreateTournamentPage.jsx
 import {
     Container, Title, TextInput, Button, Paper, Group,
-    Select, NumberInput, Alert, Center, Loader, Switch, Text
+    Select, NumberInput, Alert, Center, Loader, Switch, Text, Stack
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconArrowLeft, IconCalendar, IconShieldLock } from '@tabler/icons-react';
@@ -136,98 +136,99 @@ export default function CreateTournamentPage() {
             </Button>
 
             <Title order={2} mb="lg">Создание турнира</Title>
-
-            <Paper withBorder p="xl" radius="md">
-                <form onSubmit={handleSubmit}>
-                    <TextInput
-                        label="Название турнира"
-                        placeholder="Например: Кубок Сибири"
-                        required mb="md"
-                        value={formData.title}
-                        onChange={e => set('title', e.currentTarget.value)}
-                    />
-
-                    <Group grow mb="md">
-                        <Select
-                            label="Тип турнира"
-                            data={[
-                                { value: 'individual', label: 'Личный зачёт'    },
-                                { value: 'team',       label: 'Командный зачёт' },
-                                { value: 'season',     label: 'Рейтинг'         },
-                            ]}
-                            value={formData.type}
-                            onChange={val => set('type', val)}
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                <Paper withBorder p="xl" radius="md">
+                    <form onSubmit={handleSubmit}>
+                        <TextInput
+                            label="Название турнира"
+                            placeholder="Например: Кубок Сибири"
+                            required mb="md"
+                            value={formData.title}
+                            onChange={e => set('title', e.currentTarget.value)}
                         />
-                        {formData.type !== 'season' && (
-                            <NumberInput
-                                label="Количество участников"
-                                defaultValue={10} min={10} step={10}
-                                value={formData.maxParticipants}
-                                onChange={val => set('maxParticipants', val)}
+
+                        <Group grow mb="md">
+                            <Select
+                                label="Тип турнира"
+                                data={[
+                                    { value: 'individual', label: 'Личный зачёт'    },
+                                    { value: 'team',       label: 'Командный зачёт' },
+                                    { value: 'season',     label: 'Рейтинг'         },
+                                ]}
+                                value={formData.type}
+                                onChange={val => set('type', val)}
+                            />
+                            {formData.type !== 'season' && (
+                                <NumberInput
+                                    label="Количество участников"
+                                    defaultValue={10} min={10} step={10}
+                                    value={formData.maxParticipants}
+                                    onChange={val => set('maxParticipants', val)}
+                                />
+                            )}
+                        </Group>
+
+                        <Select
+                            label="Город проведения"
+                            data={citiesData}
+                            searchable clearable
+                            placeholder="Выберите город"
+                            value={formData.cityId}
+                            onChange={val => set('cityId', val)}
+                            mb="md"
+                        />
+
+                        {/* Переключатель: один день / диапазон */}
+                        <Group mb="xs" justify="space-between">
+                            <Text size="sm" fw={500}>Даты проведения</Text>
+                            <Switch
+                                label="Один день"
+                                size="sm"
+                                checked={singleDay}
+                                onChange={e => {
+                                    setSingleDay(e.currentTarget.checked);
+                                    // Сбрасываем значения при переключении
+                                    set('dates',      [null, null]);
+                                    set('singleDate', null);
+                                }}
+                            />
+                        </Group>
+
+                        {singleDay ? (
+                            <DatePickerInput
+                                placeholder="Выберите дату"
+                                leftSection={<IconCalendar size={16} />}
+                                value={formData.singleDate}
+                                onChange={val => set('singleDate', val)}
+                                mb="md"
+                            />
+                        ) : (
+                            <DatePickerInput
+                                type="range"
+                                placeholder="Выберите период"
+                                leftSection={<IconCalendar size={16} />}
+                                value={formData.dates}
+                                onChange={val => set('dates', val)}
+                                mb="md"
                             />
                         )}
-                    </Group>
 
-                    <Select
-                        label="Город проведения"
-                        data={citiesData}
-                        searchable clearable
-                        placeholder="Выберите город"
-                        value={formData.cityId}
-                        onChange={val => set('cityId', val)}
-                        mb="md"
-                    />
-
-                    {/* Переключатель: один день / диапазон */}
-                    <Group mb="xs" justify="space-between">
-                        <Text size="sm" fw={500}>Даты проведения</Text>
-                        <Switch
-                            label="Один день"
-                            size="sm"
-                            checked={singleDay}
-                            onChange={e => {
-                                setSingleDay(e.currentTarget.checked);
-                                // Сбрасываем значения при переключении
-                                set('dates',      [null, null]);
-                                set('singleDate', null);
-                            }}
+                        <Select
+                            label="Главный судья (необязательно)"
+                            data={judgesData}
+                            searchable clearable
+                            placeholder="Выберите судью"
+                            value={formData.headJudgeId}
+                            onChange={val => set('headJudgeId', val)}
+                            mb="xl"
                         />
-                    </Group>
 
-                    {singleDay ? (
-                        <DatePickerInput
-                            placeholder="Выберите дату"
-                            leftSection={<IconCalendar size={16} />}
-                            value={formData.singleDate}
-                            onChange={val => set('singleDate', val)}
-                            mb="md"
-                        />
-                    ) : (
-                        <DatePickerInput
-                            type="range"
-                            placeholder="Выберите период"
-                            leftSection={<IconCalendar size={16} />}
-                            value={formData.dates}
-                            onChange={val => set('dates', val)}
-                            mb="md"
-                        />
-                    )}
-
-                    <Select
-                        label="Главный судья (необязательно)"
-                        data={judgesData}
-                        searchable clearable
-                        placeholder="Выберите судью"
-                        value={formData.headJudgeId}
-                        onChange={val => set('headJudgeId', val)}
-                        mb="xl"
-                    />
-
-                    <Button type="submit" color="brandRed" fullWidth loading={loading}>
-                        Создать турнир
-                    </Button>
-                </form>
-            </Paper>
+                        <Button type="submit" color="brandRed" fullWidth loading={loading}>
+                            Создать турнир
+                        </Button>
+                    </form>
+                </Paper>
+            </Stack>
         </Container>
     );
 }

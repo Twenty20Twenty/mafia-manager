@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,6 +42,12 @@ public class AuthService {
      */
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
+        if (userRepository.findByNickname(request.getNickname())
+                .map(User::getIsPhantom)
+                .orElse(false)) {
+            throw new PhantomAccountException();
+        }
+
         validateNicknameUnique(request.getNickname());
         validateEmailUnique(request.getEmail());
 

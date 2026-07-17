@@ -102,7 +102,7 @@ export default function ClubsPage() {
                 <Text c="dimmed" ta="center" py="xl">Клубы не найдены</Text>
             ) : (
                 <>
-                    <Stack gap="md">
+                    <Stack gap="md" mx={{ base: "-20px", sm: 0 }}>
                         {paginated.map(club => (
                             <Paper
                                 key={club.id}

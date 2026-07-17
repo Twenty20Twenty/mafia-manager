@@ -125,7 +125,7 @@ export default function JudgesPage() {
                     </Paper>
 
                     {/* Мобилка */}
-                    <Stack gap="sm" hiddenFrom="sm">
+                    <Stack gap="sm" hiddenFrom="sm" mx={{ base: "-20px", sm: 0 }}>
                         {judges.map(judge => (
                             <Paper key={judge.userId} component={Link} to={`/players/${judge.userId}`}
                                 withBorder p="sm" radius="md"

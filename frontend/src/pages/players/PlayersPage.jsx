@@ -35,46 +35,64 @@ export default function PlayersPage() {
 
     return (
         <Container size="xl" py="xl">
-            <Group justify="space-between" mb="xl" visibleFrom="sm">
-                <Title order={2}>Игроки</Title>
-                <TextInput
-                    placeholder="Поиск по нику..."
-                    leftSection={<IconSearch size={16} />}
-                    value={search}
-                    onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
-                    w={300}
-                />
-            </Group>
 
-            <Stack gap="sm" mb="xl" hiddenFrom="sm">
-                <Title order={2}>Игроки</Title>
-                <TextInput
-                    placeholder="Поиск по нику..."
-                    leftSection={<IconSearch size={16} />}
-                    value={search}
-                    onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
-                />
+                <Group justify="space-between" mb="xl" visibleFrom="sm">
+                    <Title order={2}>Игроки</Title>
+                    <TextInput
+                        placeholder="Поиск по нику..."
+                        leftSection={<IconSearch size={16} />}
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.currentTarget.value);
+                            setPage(1);
+                        }}
+                        w={300}
+                    />
+                </Group>
+
+                <Stack gap="sm" mb="xl" hiddenFrom="sm">
+                    <Title order={2}>Игроки</Title>
+                    <TextInput
+                        placeholder="Поиск по нику..."
+                        leftSection={<IconSearch size={16} />}
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.currentTarget.value);
+                            setPage(1);
+                        }}
+                    />
+                </Stack>
+            <Stack gap="xs" mx={{ base: "-20px", sm: 0 }}>
+                {loading ? (
+                    <Center mt="xl">
+                        <Loader color="brandRed" />
+                    </Center>
+                ) : players.length === 0 ? (
+                    <Text c="dimmed" ta="center" mt="xl">
+                        Игроки не найдены
+                    </Text>
+                ) : (
+                    <>
+                        <SimpleGrid cols={{ base: 2, sm: 2, md: 3, lg: 4 }} spacing="md">
+                            {players.map((player) => (
+                                <PlayerCard key={player.id} player={player} />
+                            ))}
+                        </SimpleGrid>
+
+                        {totalPages > 1 && (
+                            <Center mt="xl">
+                                <Pagination
+                                    total={totalPages}
+                                    value={activePage}
+                                    onChange={setPage}
+                                    color="brandRed"
+                                    size={{ base: "sm", sm: "md" }}
+                                />
+                            </Center>
+                        )}
+                    </>
+                )}
             </Stack>
-
-            {loading ? (
-                <Center mt="xl"><Loader color="brandRed" /></Center>
-            ) : players.length === 0 ? (
-                <Text c="dimmed" ta="center" mt="xl">Игроки не найдены</Text>
-            ) : (
-                <>
-                    <SimpleGrid cols={{ base: 2, sm: 2, md: 3, lg: 4 }} spacing="md">
-                        {players.map((player) => (
-                            <PlayerCard key={player.id} player={player} />
-                        ))}
-                    </SimpleGrid>
-
-                    {totalPages > 1 && (
-                        <Center mt="xl">
-                            <Pagination total={totalPages} value={activePage} onChange={setPage} color="brandRed" size={{ base: 'sm', sm: 'md' }} />
-                        </Center>
-                    )}
-                </>
-            )}
         </Container>
     );
 }
