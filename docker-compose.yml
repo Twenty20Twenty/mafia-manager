@@ -36,9 +36,7 @@ services:
     container_name: mafia_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${WEB_PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${WEB_PGADMIN_PASSWORD}
-    ports:
-      - "5050:5050"                             
+      PGADMIN_DEFAULT_PASSWORD: ${WEB_PGADMIN_PASSWORD}                            
     restart: unless-stopped
     depends_on:
       - db
@@ -54,9 +52,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -81,7 +76,6 @@ services:
       "
     restart: on-failure
 
-  # Фронтенд теперь — статика через nginx, НЕ dev server
   frontend:
     build:
       context: ./frontend
@@ -95,11 +89,15 @@ services:
     container_name: mafia_nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
       - frontend
+      - pgadmin
+      - minio
     restart: unless-stopped
 
 volumes:

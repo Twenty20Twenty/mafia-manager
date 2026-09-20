@@ -1,3 +1,6 @@
 .env
 backend/.env
 frontend/.env
+*.key
+*.crt
+*.pem
